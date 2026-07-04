@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Builds
+dist/
+build/
+.next/
+out/
+.turbo/
+*.tsbuildinfo
+
+# Environment & secrets — NEVER commit real env files (public repo!)
+.env
+.env.*
+!.env.example
+!.env.*.template
+*.pem
+*.key
+*.p12
+
+# Databases & data
+*.sqlite
+*.db
+mysql-data/
+redis-data/
+
+# Uploaded media (runtime data, never in repo)
+uploads/
+media/
+
+# Test artifacts
+coverage/
+playwright-report/
+test-results/
+.nyc_output/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Editors & OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Prisma
+apps/api/prisma/generated/
