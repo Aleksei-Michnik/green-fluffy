@@ -54,7 +54,7 @@ export-<date>/
   manifest.json            # schema version, generated-at, counts per section
   profile.json             # user profile, preferences, connected providers (ids only, no tokens)
   pets/<petId>/pet.json    # profile, members(*), visibility, location (precise — it's the user's own data)
-  pets/<petId>/diary.json  care.json  measurements.json  documents.json
+  pets/<petId>/diary.json  care.json  measurements.json  documents.json  procedures.json  # providers referenced by id + name snapshot
   pets/<petId>/media/<file>            # originals, human-readable names manifest-mapped
   groups/<groupId>/...     # same shape
   social.json              # my follows, likes, comments authored

@@ -77,6 +77,7 @@ model CareEvent {
   notes           String?       @db.VarChar(500)
   occurredAt      DateTime      @map("occurred_at")
   performedBy     String        @map("performed_by") @db.VarChar(36)
+  providerId      String?       @map("provider_id") @db.VarChar(36)   // Phase 5C provider (gardener, service) when not a user
   occurrenceId    String?       @map("occurrence_id") @db.VarChar(36)  // when created from a reminder done-action
   createdAt       DateTime      @default(now()) @map("created_at")
   deletedAt       DateTime?     @map("deleted_at")
@@ -193,7 +194,7 @@ The **Today board** is the retention surface: reminders due, overdue, recently d
 | # | Work | Done when |
 | - | ---- | --------- |
 | 6.1 | Schema `phase6_care` (FoodItem, CareEvent, Reminder, ReminderOccurrence, NotificationPreference) | Migration applied |
-| 6.2 | Care log: API + QuickLogSheet + FoodPicker + history list; diary timeline shows care events inline (merged view toggle) | E2E: log feeding in ≤3 taps; history renders |
+| 6.2 | Care log: API + QuickLogSheet + FoodPicker (+ optional `ProviderPicker` for non-user performers) + history list; **unified log**: the Phase 5 diary timeline renders care events inline with time/quantity/item/performer (every event is attributed to the pet and visible in its diary) | E2E: log feeding in ≤3 taps; entry visible in the pet's diary timeline with its details |
 | 6.3 | Queue infra: BullMQ module, Redis wiring in all envs, dead-letter, `queue:health` endpoint, singleton-after-redeploy staging test | Jobs survive slot flip without duplication |
 | 6.4 | Scheduling engine: RRULE validation, occurrence generator, dispatch/missed transitions; DST + timezone test battery | Occurrence tests green incl. DST transitions (Asia/Jerusalem, Europe/Kyiv) |
 | 6.5 | Reminder API + ReminderForm + TodayBoard + done/snooze/skip flows (done → CareEvent tx) | E2E: create daily reminder → occurrence appears → done → care history entry exists |
@@ -215,4 +216,5 @@ The **Today board** is the retention surface: reminders due, overdue, recently d
 - Web push = new `NotificationChannel` + preference column value; zero caller changes.
 - Group reminders (Phase 8) reuse `groupId` columns already present.
 - Weather alerts (7.7), KB warnings (9.7), social (10.8) all call `dispatcher.notify` with their category — the matrix UI already shows the categories grayed until active.
-- Sensor-triggered care events (Phase 16) write `CareEvent` with a device actor — schema already actor-agnostic (`performedBy`).
+- Sensor-triggered care events (Phase 16) write `CareEvent` with a device actor — schema already actor-agnostic (`performedBy`, `providerId`).
+- Care history is the input for Phase 9.9 care-deviation warnings (over/under feeding & watering vs KB guidelines) — no schema changes needed there.

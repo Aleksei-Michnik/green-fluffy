@@ -145,6 +145,7 @@ ordering: followed items get a recency boost (interleave A-first within each tim
 - Visibility revalidated per page serve (events joined against current `isPublic` + section flags; `retractedAt` short-circuits).
 - p95 target < 300 ms on VDS; covered by index `(publishedAt)` + join pruning; feed page size 20.
 - The same query with `petId=` filter powers per-pet activity tabs.
+- **Same-kind suggestions** (10.2): `GET /api/v1/feed/suggestions` — public pets with `speciesId` in my pets' species set (exact breed first, then parent species), ranked by recent activity; cached per user 1 h. Deterministic, no ML — the "recommend subscriptions to public pages of same-kind pets" story.
 
 ## API Endpoints
 
@@ -185,7 +186,7 @@ components/social/
 | # | Work | Done when |
 | - | ---- | --------- |
 | 10.1 | Schema `phase10_social` + `ActivityEvent` writers on publish paths (media upload to public pet, entry made public, album created, pet flips public ⇒ backfill events; flips private ⇒ retract) | Publish/retract lifecycle tests green |
-| 10.2 | Follows: API + buttons + following list | Follow round-trip E2E |
+| 10.2 | Follows: API + buttons + following list; **same-kind suggestions** — "pets like mine" rail (public pets sharing my pets' species/breed, species tree-walk, excluding already-followed/own/blocked) on feed + pet pages | Follow round-trip E2E; Maine Coon owner sees other Maine Coons (falls back to cats) suggested |
 | 10.3 | Likes: API + optimistic button + counters (tx + reconciliation job) | Idempotency + counter accuracy tests |
 | 10.4 | Comments: API + thread UI + edit window + status model | E2E comment thread on a public photo; XSS corpus renders inert |
 | 10.5 | Moderation: owner delete/settings toggles, blocks, report dialog + moderator queue page | Owner controls E2E; report → moderator hides |

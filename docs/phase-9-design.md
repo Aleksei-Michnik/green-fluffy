@@ -27,7 +27,8 @@ Phase 9 delivers the app's signature intelligence: **warnings** when a user's co
 packages/species-data/
   data/hazards/*.json        # toxicity & danger rules
   data/companions/*.json     # plant-plant relations
-  data/care/*.json           # care guidelines
+  data/care/*.json           # care guidelines (incl. soil + watering periods)
+  data/procedures/*.json     # recommended procedures per species×sex (castration etc.)
   src/ (schema.ts extended, validate.ts, index.ts)
 apps/api/src/
   knowledge/
@@ -36,6 +37,8 @@ apps/api/src/
     hazard-engine.service.ts
     companion-engine.service.ts
     recommendation.service.ts
+    procedure-recommendation.service.ts  # 9.8 — materializes RECOMMENDED Procedures (Phase 5B contract)
+    care-deviation.service.ts            # 9.9 — over/under feeding & watering vs guidelines
     warnings.controller.ts / service   # user-facing computed warnings + dismissals
     jobs/warning-refresh.job.ts        # incremental recompute on relevant changes + nightly full pass
 ```
@@ -67,7 +70,16 @@ Extends the Phase 2 package; every record cites sources. Species referenced by *
 // data/care/monstera.json
 { "subject": "monstera-deliciosa", "guidelines": [
   { "topic": "watering", "placement": ["INDOOR"], "season": "summer",
-    "advice": { "en": "Water when top 3cm dry…", "…": "…" }, "sources": [ … ] } ] }
+    "advice": { "en": "Water when top 3cm dry…", "…": "…" },
+    "cadence": { "everyDays": [7, 10] },                 // machine-readable band for 9.9 deviation checks
+    "sources": [ … ] },
+  { "topic": "soil", "advice": { "en": "Well-draining aroid mix: bark, perlite…", "…": "…" }, "sources": [ … ] } ] }
+// data/procedures/felis-catus.json
+{ "subject": "felis-catus", "subjectMatch": "descendants", "procedures": [
+  { "kind": "castration", "appliesTo": { "sex": "male" }, "necessity": "recommended",
+    "window": { "fromMonths": 5 }, "note": { "en": "…", "…": "…" }, "sources": [ … ] },
+  { "kind": "spaying", "appliesTo": { "sex": "female" }, "necessity": "recommended",
+    "window": { "fromMonths": 5 }, "note": { "en": "…", "…": "…" }, "sources": [ … ] } ] }
 ```
 
 Curation rules (enforced by CI validator): every rule has ≥1 source; notes in all 4 locales (CI fails on missing); slugs must resolve against the species dataset; severity taxonomy fixed. Target macros (`@cats`, `@fish`, `@ANIMAL`) expand at sync time via species attributes.
@@ -107,14 +119,30 @@ model CompanionRule {
 model CareGuideline {
   id        String @id @default(uuid()) @db.VarChar(36)
   subjectSlug String @map("subject_slug") @db.VarChar(120)
-  topic     String @db.VarChar(30)      // watering | light | feeding | pruning | temperature | ...
+  topic     String @db.VarChar(30)      // watering | soil | light | feeding | pruning | temperature | ...
   placement Json?                        // applicable placements
   season    String? @db.VarChar(10)     // spring|summer|autumn|winter|null=all
   advice    Json
+  cadence   Json?                        // machine-readable band, e.g. { "everyDays": [7,10] } — 9.9 input
   sources   Json
   datasetVersion String @map("dataset_version") @db.VarChar(20)
   @@index([subjectSlug, topic])
   @@map("care_guidelines")
+}
+
+model ProcedureRule {
+  id          String @id @default(uuid()) @db.VarChar(36)
+  subjectSlug String @map("subject_slug") @db.VarChar(120)
+  subjectMatch String @map("subject_match") @db.VarChar(15)
+  kind        String @db.VarChar(30)     // castration | spaying | dental | ...
+  appliesTo   Json?                       // { sex?, keptAs? }
+  necessity   String @db.VarChar(15)      // must | recommended | optional
+  window      Json?                       // { fromMonths?, toMonths? }
+  note        Json
+  sources     Json
+  datasetVersion String @map("dataset_version") @db.VarChar(20)
+  @@index([subjectSlug])
+  @@map("procedure_rules")
 }
 
 model ComputedWarning {
@@ -165,7 +193,15 @@ Pairs of PLANT pets sharing a group whose type maps to a rule context (`PATCH/FI
 
 ### Recommendations
 
-`recommendation.service` composes, per pet: care guidelines filtered by species (tree-walk), placement, current season (hemisphere from location, default north), plus weather-aware nudges when located (e.g., watering guideline + 7-day dry forecast ⇒ elevated suggestion). Pure read-model — no materialization needed.
+`recommendation.service` composes, per pet: care guidelines filtered by species (tree-walk), placement, current season (hemisphere from location, default north), plus weather-aware nudges when located (e.g., watering guideline + 7-day dry forecast ⇒ elevated suggestion). For plants this explicitly includes **soil kind** ("what soil it likes/requires") and **watering periods**, adjusted by public weather data for outdoor placements and by in-house baseline for indoor ones. Pure read-model — no materialization needed.
+
+### Procedure recommendations (9.8 — the Phase 5B contract)
+
+`procedure-recommendation.service` evaluates `ProcedureRule`s against each pet (species tree-walk × sex × age window) and materializes missing ones as `Procedure` rows with `status=RECOMMENDED`, `source=kb`, `kbRuleId`, `necessity`. Dismissing (CANCELLED) or completing them is user-land (Phase 5B UI); re-runs never resurrect a cancelled KB recommendation (keyed by `kbRuleId`).
+
+### Care-deviation warnings (9.9)
+
+`care-deviation.service` compares the Phase 6 care log against guideline `cadence` bands per pet: watering/feeding events too frequent (**over**) or overdue beyond the band + grace (**under**), weather-adjusted for outdoor plants (rainfall counts as watering input; hot/dry spells tighten the band). Emits `ComputedWarning`s (`type=care_deviation`, severity `caution`/`danger` by overdue ratio) through the same materialization/dismissal/notification machinery. Runs inside the nightly pass + on care-event writes (debounced per pet).
 
 ## API Endpoints
 
@@ -195,6 +231,8 @@ Pairs of PLANT pets sharing a group whose type maps to a rule context (`PATCH/FI
 | 9.5 | Recommendations: service + pet tab + seasonal/placement filtering + weather nudges (graceful without location) | Monstera fixture shows watering advice; dry-week fixture elevates it |
 | 9.6 | Contribution pipeline: `docs/kb-contributing.md` (rule format, source requirements, review checklist), PR template, CI dataset-diff summary comment | A sample rule PR passes the documented flow end-to-end |
 | 9.7 | Warning notifications: dispatcher category, new-warning-only firing, resolution handling (warning disappears when condition clears — e.g., pet moved out of group) | Notification on new hazard; none on recompute of existing; resolved warnings close |
+| 9.8 | Procedure recommendations: `ProcedureRule` dataset (castration/spaying for cats, dogs, rodents by sex; core dental/parasite entries) + materialization into Phase 5B RECOMMENDED procedures; age-window handling | Male cat fixture ≥5 months gets castration RECOMMENDED with source link; cancelled stays cancelled on re-run |
+| 9.9 | Care-deviation warnings: cadence bands in care dataset + deviation engine (over/under feeding & watering, weather-adjusted, grace thresholds) + warnings surfaced/notified like hazards | Under-watered monstera fixture warns; rain-covered outdoor bed does not; over-feeding fixture warns |
 
 ## Testing Strategy
 

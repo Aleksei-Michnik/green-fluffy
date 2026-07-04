@@ -65,12 +65,22 @@ An application to care for any living being you love — animals and plants, at 
 
 ## Health Diary
 
-- As an owner or caretaker, I can add diary entries of different types — condition/diagnosis, symptom (yellow leaves, fast breathing, bad appetite), measurement, treatment, vaccination, vet visit, observation, or free-form note/thought — so that the pet's whole health story lives in one timeline.
+- As an owner or caretaker, I can add diary entries of different types — condition/diagnosis, symptom (yellow leaves, fast breathing, bad appetite), measurement, treatment, vaccination, vet visit, procedure, observation, event, or free-form note/thought — so that the pet's whole health story lives in one timeline.
+- As an owner or caretaker, I can record life events with photos, notes, and documents: birth-giving, traumas/accidents, grooming for animals; flowering, fruiting, pest infestation for plants; and disasters affecting any pet — drought, hurricane, hail, fire, flood, vandalism — so that everything that happens to my pet is captured.
+- As an owner, the pet's diary/log is the **unified timeline of everything** — every event, including routine feeding and watering, is attributed to the pet and visible in its diary/log with the details I provided (time, quantity, food/fertilizer item from my catalog) so that one place tells the full story.
 - As an owner or caretaker, I can attach photos, dates, and structured details (weight, height, temperature, dosage) to a diary entry so that entries are precise and comparable over time.
 - As an owner or caretaker, I can record weight/height (or trunk girth/plant height) measurements and see them charted over time so that trends are visible.
 - As an owner, I can attach vet documents — medical records, lab results, prescriptions — to diary entries or the pet itself, as scans/PDFs/photos, so that paperwork is attributed and findable.
 - As an owner or caretaker, I can edit and delete my diary entries so that mistakes can be fixed; changes are audit-logged.
 - As an owner, I can filter and search the diary by entry type, date range, and text so that I can find "when did we last deworm her" quickly.
+
+### Procedures (Surgeries, Castration, Cutting…)
+
+- As an owner, I can track **procedures** through their lifecycle — recommended, planned, done, cancelled — such as castration/spaying, dental cleaning, surgeries for animals, or cutting/grafting/repotting for plants, so that both upcoming and past interventions are managed in one place.
+- As an owner, I can see procedures **recommended for my pet's species and sex** (e.g., castration marked as must/recommended for cats, dogs, rodents depending on sex) from the knowledge base, so that I don't miss essential care.
+- As an owner, I can record who performed a procedure — a vet with clinic, a gardener, a farm worker, or myself — choosing an existing provider or adding a new one, so that the work is properly attributed even when not performed by a vet.
+- As an owner, I can attach documents, notes, and pictures to a procedure, and a completed procedure appears in the pet's diary so that its history is complete.
+- As an owner, I can schedule a planned procedure and get a reminder for it so that it actually happens.
 
 ## Feeding, Watering & Care
 
@@ -80,6 +90,14 @@ An application to care for any living being you love — animals and plants, at 
 - As an owner, I can create vet & health reminders (vaccination due, checkup, antiparasitic treatment) so that preventive care happens on time.
 - As a user, I receive reminders via email and Telegram notifications (and web push later) with the option per reminder, so that I get notified where it suits me.
 - As an owner or caretaker, I can mark a reminder occurrence as done (optionally auto-creating the corresponding diary/feeding entry) or snooze it so that the history reflects reality.
+
+## Care Providers Directory (Vets, Gardeners, Organizations)
+
+- As a user, I can find and reference **shared** care providers — vet clinics, individual vets, registered gardeners, pond health organizations, fishtank caretakers, farm services — so that provider data is entered once and reused by everyone.
+- As a user, I can attribute vet visits, procedures, and care events to a provider (choose an existing one or add a new one inline) so that "who did it" is part of the record.
+- As a user, I can see a provider's public links — website and/or Google Business profile — so that I can check them out myself; there are **no public testimonials or ratings** in the app for now.
+- The provider directory is our own database, but it is **actualized from open data sources** (e.g., OpenStreetMap veterinary/garden POIs) so that entries stay current without manual upkeep; user-created entries and synced entries are deduplicated.
+- As a user, I can suggest corrections to a shared provider entry so that the directory improves over time (maintainer-reviewed).
 
 ## Location & Environment
 
@@ -104,6 +122,9 @@ An application to care for any living being you love — animals and plants, at 
 - As a user, I can see warnings when a combination I own is risky — a plant toxic to cats within a cat household, a plant dangerous to fish placed in a tank/pond group, a poisonous flower reachable by pets — so that accidents are prevented.
 - As a user, I can see plant-to-plant compatibility warnings (bad companions in the same pot, patch, or open soil) and suggestions (good companions) so that my plantings thrive.
 - As a user, I can see care recommendations based on species, placement (sun/shade, indoor/outdoor), season, and local weather so that I get actionable advice, not generic text.
+- As a plant owner, I can see what soil kind my plant likes/requires and its recommended watering periods — adjusted to public weather data for outdoor plants or to in-house conditions for indoor ones — so that routine care matches the species' needs.
+- As a user, I get warnings when my care log deviates from the species' needs — too much or too little feeding/watering — so that routine mistakes are caught before they become symptoms.
+- As a user, I get warnings when the weather forecast is dangerous or requires additional attention for my located outdoor pets/plants (frost, heatwave, storm, drought) so that I can protect them in time.
 - As a user, I can view the reason/source behind each warning so that I can trust and verify it.
 - Warnings are computed from a curated, versioned species knowledge base shipped with the app (compiled from public sources such as ASPCA toxicity lists and companion-planting references); as the catalog grows, warnings improve for everyone.
 - As a user, I can dismiss a specific warning ("my cat never enters that room") so that my dashboard stays relevant; dismissed warnings remain viewable.
@@ -112,6 +133,7 @@ An application to care for any living being you love — animals and plants, at 
 
 - As a user, I can browse a discovery feed of public pets' recent photos, stories, and milestones so that I can enjoy and learn from other people's green and fluffy.
 - As a user, I can follow public pets (and users) so that my feed prioritizes what I care about.
+- As a user, I get **subscription recommendations for public pets of the same kind as mine** (same species/breed — other Maine Coons, other Monsteras) so that I discover relevant pages easily.
 - As a user, I can like public photos, stories, and diary entries that their owner made public so that I can show appreciation.
 - As a user, I can comment on public content, and as an owner I can moderate (delete) comments on my pets' content and block users from commenting so that discussions stay healthy.
 - As an owner, I can turn comments/likes off per pet so that a quiet page stays quiet.
@@ -145,6 +167,7 @@ An application to care for any living being you love — animals and plants, at 
 
 ### AI Monitoring (Future Paid Tier)
 
+- As a user, I can have uploaded photos analyzed by AI to **detect problems early** — yellowing leaves, pest infestation, skin conditions — so that issues are flagged before they become serious.
 - As a user, I can get AI-assisted insights: symptom photo triage ("do these leaves look like overwatering?"), anomaly detection in measurements and sensor data, and care plan suggestions.
 - Monetization approaches (e.g., monthly subscription gating AI monitoring) will be considered only after the free core proves valuable.
 
@@ -156,6 +179,8 @@ An application to care for any living being you love — animals and plants, at 
 - Personal data (especially geo locations) is treated as sensitive: precise coordinates are never exposed on public pages or in public API responses; access control is enforced server-side on every endpoint, not in the UI.
 - All traffic is HTTPS; auth follows the myfinpro model (JWT access + refresh with rotation, httpOnly cookies, rate-limited auth endpoints, audit logging).
 - Uploaded files are validated (MIME whitelist, size limits), stored outside the web root, and served only through authorization-checked endpoints; private media URLs are not guessable.
+- Spam prevention is built into the commenting/like/follow system (rate limits, new-account restrictions, blocks, report queue), and all posting, querying, and upload endpoints are guarded against abuse and brute force (throttling, pagination caps, auth lockout patterns).
+- Public pages ship explicit crawler rules: `robots.txt` and `llms.txt` define what crawlers and AI agents may index on public pet/group pages; private surfaces are never crawlable.
 - GDPR-style rights: data export and account deletion with grace period.
 
 ### Platform

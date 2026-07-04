@@ -109,7 +109,7 @@ Retrofit in the same iteration set: **all** Phase 2–3 endpoints switch from `P
 ## Public Surface (SSR, SEO, Caching)
 
 - Next.js route `/[locale]/p/[petId]` (short shareable path) — SSR against the public API; `generateMetadata` for title/description/OpenGraph image (pet avatar `large` variant via public media URL).
-- `sitemap.xml` listing public pets (updated on publish/unpublish); `robots.txt` allows `/p/*`, disallows everything else app-internal.
+- `sitemap.xml` listing public pets (updated on publish/unpublish); `robots.txt` allows `/p/*` + sitemap, disallows all app-internal/private routes and the API; `llms.txt` published alongside it describing what AI agents/crawlers may use on public pages (public pet/group profiles only; no private surfaces, no user enumeration) — both served from the web app, versioned in repo.
 - Caching: public API responses `Cache-Control: public, max-age=60, stale-while-revalidate=300` (+ Cloudflare edge). Unpublishing must purge: flip to private → next request 404s (cache TTL ≤ 60 s is the accepted staleness bound; document it).
 - Anonymous rate limiting: dedicated throttle bucket per IP for `/public/*`.
 
@@ -138,7 +138,7 @@ components/sharing/
 | 4.3 | Invites: create/preview/accept/revoke API + UI (dialog with copyable link, accept page); member management (list/role/remove/leave); audit | Invite E2E: owner → link → second user joins as caretaker |
 | 4.4 | Visibility: API + `VisibilityPanel`; audit on every change | Section toggles reflected immediately in access checks |
 | 4.5 | `PublicPetDto` + `/public/*` endpoints + serializer snapshot tests + anon throttling | Snapshot proves absence of geo/docs/members fields |
-| 4.6 | Public SSR page `/p/[petId]` + OpenGraph + sitemap + robots; share button on pet page | Lighthouse SEO ≥ 90; link unfurls with image in Telegram/Slack |
+| 4.6 | Public SSR page `/p/[petId]` + OpenGraph + sitemap + `robots.txt` + `llms.txt`; share button on pet page | Lighthouse SEO ≥ 90; link unfurls with image in Telegram/Slack; crawler files served |
 | 4.7 | Shared-with-me dashboard section; caretaker write-path verification (upload photo, add caption) | Caretaker can add, viewer cannot (E2E) |
 | 4.8 | Account deletion × pets: implement `PetHandlingStrategy` (Phase 1.9 stub): sole-owner pets → choose transfer-to-member or delete; member rows always removed; municipal/ownerless pets keep creator until transfer | Deletion E2E both branches; no orphaned access |
 | 4.9 | Hardening: fuzz public endpoints (invalid ids, enumeration), cache purge behavior, rate limits, `X-Robots-Tag: noindex` on preview-as-public, pen-test checklist pass | Checklist in PR description signed off |

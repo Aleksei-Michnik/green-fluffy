@@ -33,7 +33,7 @@ Adapt myfinpro's `apps/bot` scaffold (grammy.js + Fluent i18n — extend to ru/u
 
 ## Phase 17: AI Monitoring (Possible Paid Tier)
 
-- Candidates: symptom photo triage ("does this look like overwatering?"), anomaly detection on measurement/sensor series, care-plan suggestions, KB rule *drafting* (into the Phase 9.6 curation pipeline — never directly to users).
+- Candidates: **AI analysis of uploaded photos for early problem detection** (yellowing leaves, pest infestation, skin conditions — flagged before they become serious), symptom photo triage ("does this look like overwatering?"), anomaly detection on measurement/sensor series, care-plan suggestions, KB rule *drafting* (into the Phase 9.6 curation pipeline — never directly to users).
 - Architecture: LLM provider behind an interface + BullMQ jobs; strict data minimization (only the pet's relevant data in prompts, no cross-user context); user-visible "AI-generated" labeling; vet-disclaimer UX.
 - Monetization: only after the free core proves valuable — subscription gating this tier; requires billing infra (Stripe or similar), entitlement checks, and a pricing decision none of which should leak complexity into earlier phases.
 

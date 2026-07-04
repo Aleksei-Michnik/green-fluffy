@@ -208,9 +208,11 @@ Same pyramid, tools, and coverage gates as myfinpro (Jest/Testcontainers for API
 - MIME whitelist by magic bytes, size caps, EXIF strip, quota, storage outside web root, authorization-checked serving (see §4.3); rate limits on upload endpoints; no SVG uploads (XSS vector) — raster + PDF + mp4/webm only.
 - User text (comments, diary, captions) rendered as plain text / sanitized minimal markdown; CSP via helmet; output encoding everywhere.
 
-### 5.5 Abuse & Moderation
+### 5.5 Abuse, Spam & Brute-Force Protection
 
-- Report queue for public content; owner-side comment moderation and per-user blocking; per-pet toggle for comments/likes; rate limits on comment/like/follow endpoints to deter spam.
+- Report queue for public content; owner-side comment moderation and per-user blocking; per-pet toggle for comments/likes; rate limits on comment/like/follow endpoints to deter spam; reduced limits for new (<24 h) accounts.
+- Brute-force and query-abuse guards on **all** surfaces: strict throttles on auth (ported), posting, and upload endpoints; anonymous public-API throttling per IP; pagination caps and bounded query complexity on list endpoints; upload size/count limits per window.
+- Crawler & AI-agent rules: `robots.txt` and `llms.txt` published for the public surface (public pet/group pages, sitemap allowed; app internals, private routes, and API disallowed).
 
 ### 5.6 Transport & Infrastructure
 
@@ -234,6 +236,9 @@ erDiagram
   Pet ||--o{ DiaryEntry : has
   DiaryEntry ||--o{ Measurement : includes
   Pet ||--o{ PetDocument : has
+  Pet ||--o{ Procedure : "undergoes"
+  Provider ||--o{ Procedure : performs
+  Provider ||--o{ CareEvent : performs
   Pet ||--o{ CareEvent : has
   User ||--o{ FoodItem : "catalog of"
   User ||--o{ Reminder : sets
@@ -255,7 +260,8 @@ erDiagram
 | Pets & species | `Species`, `Pet` (owner types: user / municipality / none) | Phase 2 |
 | Media | `MediaFile`, `Album`, `AlbumItem` | Phase 3 |
 | Sharing | `PetMember`, `PetInviteToken` | Phase 4 |
-| Health | `DiaryEntry`, `Measurement`, `PetDocument` | Phase 5 |
+| Health | `DiaryEntry`, `Measurement`, `PetDocument`, `Procedure` | Phase 5 |
+| Providers | `Provider` (shared directory: clinics, vets, gardeners, organizations) | Phase 5 |
 | Care | `FoodItem`, `CareEvent`, `Reminder`, `ReminderOccurrence`, `NotificationPreference` | Phase 6 |
 | Geo & weather | `Location`, `WeatherAlertRule`, weather cache | Phase 7 |
 | Groups | `PetGroup`, `PetGroupItem`, group members/invites | Phase 8 |
@@ -276,17 +282,17 @@ Each iteration is small, deployable, tested, and ships behind CI. Detailed step-
 | 2 | Pet profiles & species catalog | 8 | [docs/phase-2-design.md](docs/phase-2-design.md) |
 | 3 | Media foundation: uploads, albums, quotas | 9 | [docs/phase-3-design.md](docs/phase-3-design.md) |
 | 4 | Access control, sharing & public pages | 9 | [docs/phase-4-design.md](docs/phase-4-design.md) |
-| 5 | Health diary, measurements & documents | 9 | [docs/phase-5-design.md](docs/phase-5-design.md) |
+| 5 | Health diary, procedures, documents & care providers | 16 | [docs/phase-5-design.md](docs/phase-5-design.md) |
 | 6 | Feeding & care, reminders, notifications | 10 | [docs/phase-6-design.md](docs/phase-6-design.md) |
 | 7 | Locations, maps & weather | 8 | [docs/phase-7-design.md](docs/phase-7-design.md) |
 | 8 | Pet groups: patches, fields, tanks, colonies | 8 | [docs/phase-8-design.md](docs/phase-8-design.md) |
-| 9 | Knowledge base: warnings & recommendations | 7 | [docs/phase-9-design.md](docs/phase-9-design.md) |
+| 9 | Knowledge base: warnings & recommendations | 9 | [docs/phase-9-design.md](docs/phase-9-design.md) |
 | 10 | Social: follows, likes, comments, feed | 9 | [docs/phase-10-design.md](docs/phase-10-design.md) |
 | 11 | Stories | 6 | [docs/phase-11-design.md](docs/phase-11-design.md) |
 | 12 | Data export & privacy dashboard | 4 | [docs/phase-12-design.md](docs/phase-12-design.md) |
 | 13+ | Future: Telegram bot, mini app, passkey, sensors, AI | outline | [docs/future-phases.md](docs/future-phases.md) |
 
-**Total core scope: 107 iterations.** Recommended order is as listed; Phases 6 and 7 are independent of each other and can swap; Phase 9 needs Phases 2 + 8 (it reasons over species, placements, and group co-location); Phases 10–11 need Phases 3 + 4.
+**Total core scope: 116 iterations.** Recommended order is as listed; Phases 6 and 7 are independent of each other and can swap; Phase 9 needs Phases 2, 6 + 8 (it reasons over species, placements, care logs, and group co-location); Phases 10–11 need Phases 3 + 4.
 
 ### Phase 0: Foundation
 
@@ -354,31 +360,52 @@ Each iteration is small, deployable, tested, and ships behind CI. Detailed step-
 | 4.3 | Invites API + UI | Create/revoke invite links, accept-invite page, member list, role change, removal | Invite flow E2E |
 | 4.4 | Visibility model | `isPublic` + per-section visibility (photos/diary/feeding/location-coarse); settings UI | Visibility changes audit-logged |
 | 4.5 | Public DTOs | Separate `PublicPetDto` serializers (no precise geo at type level) + public API endpoints (anonymous, cacheable, rate-limited) | Geo-privacy snapshot tests green |
-| 4.6 | Public pet page | SSR public page: profile, public albums/gallery, coarse location, OpenGraph/meta, sitemap | Anonymous browsing works; SEO checks pass |
+| 4.6 | Public pet page | SSR public page: profile, public albums/gallery, coarse location, OpenGraph/meta, sitemap, `robots.txt` + `llms.txt` crawler/AI-agent rules | Anonymous browsing works; SEO checks pass |
 | 4.7 | Shared-with-me | Members see shared pets in dashboard; caretaker write paths verified | Caretaker can add content, viewer cannot |
 | 4.8 | Deletion integration | Account deletion: choose transfer pets to member or delete; orphaned-pet handling | Grace-period deletion handles pets correctly |
 | 4.9 | Hardening pass | Fuzz public endpoints, rate limits, cache rules, robots.txt, noindex for borderline views | Security checklist signed off |
 
-### Phase 5: Health Diary, Measurements & Documents
+### Phase 5: Health Diary, Procedures, Documents & Care Providers
+
+The pet's diary is the **unified timeline of everything** that happens to it — health entries, life events, procedures, and (from Phase 6) routine care events like feeding/watering, each attributed to the pet with its details (time, quantity, catalog item, performer).
+
+#### 5A: Health Diary & Documents
 
 | Iteration | Objective | Scope | Acceptance |
 | --------- | --------- | ----- | ---------- |
-| 5.1 | Diary schema | `DiaryEntry` (types: condition/symptom/measurement/treatment/vaccination/vet_visit/observation/note/event), `Measurement`, media links | Migration applied |
+| 5.1 | Diary schema | `DiaryEntry` (types: condition/symptom/measurement/treatment/vaccination/vet_visit/procedure/observation/note/event), event kinds (birth/trauma/grooming/flowering/fruiting/pest/disaster: drought/hurricane/hail/fire/flood/vandalism), `Measurement`, media links | Migration applied |
 | 5.2 | Diary API | CRUD + caretaker permissions + audit + cursor pagination + filters (type/date/text FULLTEXT) | API tested incl. access matrix |
-| 5.3 | Diary timeline UI | Timeline with type icons, filters, search | Timeline usable on mobile |
-| 5.4 | Entry composer | Type-aware form (structured details per type), photo attach (→ optionally also gallery) | Entry with photos created ≤ 1 min |
+| 5.3 | Diary timeline UI | Timeline with type/event-kind icons, filters, search | Timeline usable on mobile |
+| 5.4 | Entry composer | Type-aware form (structured details per type incl. event kinds), photo attach (→ optionally also gallery) | Entry with photos created ≤ 1 min |
 | 5.5 | Measurements & charts | Weight/height/girth/temp series; Recharts trends with unit handling | Chart renders series correctly |
 | 5.6 | Documents schema + API | `PetDocument` (passport/chip/pedigree/medical/prescription/lab), chip number search, scans via media pipeline, always-private | Documents CRUD; never on public views |
 | 5.7 | Documents UI | Documents section with previews (PDF/image), structured fields (numbers, dates, issuer) | Vet doc attachable to a diary entry |
 | 5.8 | Diary visibility | Per-entry visibility (private/members/public) within pet's diary section visibility | Public sees only public entries of public-diary pets |
 | 5.9 | Vaccination/treatment view | Filtered registry ("all vaccinations"), due-status surface (feeds Phase 6 reminders) | Registry view works |
 
+#### 5B: Procedures Lifecycle
+
+| Iteration | Objective | Scope | Acceptance |
+| --------- | --------- | ----- | ---------- |
+| 5.10 | Procedure schema + API | `Procedure` (kind: castration/surgery/dental/grooming-procedure/cutting/grafting/repotting/…; status: recommended/planned/done/cancelled; source: kb/vet/user; scheduled/performed dates; performer attribution; documents/photos) | Lifecycle transitions tested |
+| 5.11 | Procedures UI | Procedures tab: recommended/planned/history lists; plan → schedule (reminder hook, Phase 6); complete → linked diary entry with docs/photos/vet info | Castration planned → done → in diary E2E |
+| 5.12 | Plant procedures | Cutting/grafting/repotting flows with performer (owner/gardener/worker) attribution | Plant procedure recorded with non-vet performer |
+
+#### 5C: Care Providers Directory (shared)
+
+| Iteration | Objective | Scope | Acceptance |
+| --------- | --------- | ----- | ---------- |
+| 5.13 | Provider schema + API | Shared `Provider` (vet_clinic/vet/gardener/pond_org/aquarium_caretaker/farm_service/other) with links (website, Google Business), address/coarse geo, dedup by name+locality; suggest-correction flow (maintainer-reviewed) | Provider CRUD + dedup tested |
+| 5.14 | Provider attribution | `providerId` on vet visits, procedures, care events; picker UI (search shared directory + inline add) | Vet visit attributed to clinic; gardener attributed to cutting |
+| 5.15 | Directory UI | Provider directory page (search by kind/name/locality), provider page with links (no testimonials/ratings) | Directory browsable; links open |
+| 5.16 | Open-data sync | Importer actualizing providers from open sources (OSM `amenity=veterinary` etc.): match/merge by name+geo, provenance kept, user data never overwritten silently | Sync idempotent on staging fixture; conflicts queued for review |
+
 ### Phase 6: Feeding & Care, Reminders, Notifications
 
 | Iteration | Objective | Scope | Acceptance |
 | --------- | --------- | ----- | ---------- |
 | 6.1 | Care schema | `FoodItem` (user catalog), `CareEvent` (feeding/watering/fertilizing/medication/grooming/repotting/pruning/…) | Migration applied |
-| 6.2 | Care log API + UI | Quick-log entry (select/add food inline), per-pet history, edit/delete | Feeding logged in ≤ 3 taps |
+| 6.2 | Care log API + UI | Quick-log entry (select/add food inline, time + quantity + unit), per-pet history, edit/delete; **care events appear in the pet's unified diary timeline** with their details | Feeding logged in ≤ 3 taps and visible in the diary |
 | 6.3 | Queue infrastructure | BullMQ + Redis wiring (first real Redis use), repeatable jobs, dead-letter handling | Jobs visible/processed; survives deploy slot flip |
 | 6.4 | Reminder schema + engine | `Reminder` (RRULE schedule, timezone-aware) + `ReminderOccurrence` generation job; DST-safe | Occurrences generated correctly across DST |
 | 6.5 | Reminder API + UI | CRUD, per-pet and global "today" view, done (auto-creates care/diary entry) / snooze / skip | Done-flow writes history |
@@ -422,16 +449,18 @@ Each iteration is small, deployable, tested, and ships behind CI. Detailed step-
 | 9.2 | Hazard engine | Rule evaluation: toxic-plant × animal in same household/group; water-toxic plant × tank/pond group; reach heuristics (indoor placement) | Unit-tested rule engine |
 | 9.3 | Companion engine | Plant×plant good/bad companions in same pot/patch/soil context | Companion warnings computed |
 | 9.4 | Warnings API + dashboard | "My green and fluffy" panel: active warnings with severity, reason, and source link; `WarningDismissal` | Warning appears when toxic plant added to cat household |
-| 9.5 | Recommendations | Care recommendations from `CareGuideline` × species × placement × season × local weather | Seasonal advice shown |
+| 9.5 | Recommendations | Care recommendations from `CareGuideline` × species × placement × season × local weather; explicit **soil kind** and **watering period** guidance for plants (weather-adjusted outdoors, in-house baseline indoors) | Seasonal + soil + watering advice shown |
 | 9.6 | KB contribution flow | Maintainer pipeline for extending dataset (PR-based, schema-validated, CI-checked) | Docs + validation for contributions |
 | 9.7 | Warning notifications | New-warning notifications (respecting preferences) | Notification on new hazard |
+| 9.8 | Procedure recommendations | `ProcedureRule` dataset (species × sex → recommended/must procedures, e.g. castration for cats/dogs/rodents) feeding Phase 5B recommended-procedures list | Cat fixture shows castration as recommended |
+| 9.9 | Care-deviation warnings | Compare care log (Phase 6) against guidelines: over/under feeding & watering detection with grace thresholds; weather-aware for outdoor plants | Under-watering fixture triggers warning; well-cared fixture silent |
 
 ### Phase 10: Social — Follows, Likes, Comments, Feed
 
 | Iteration | Objective | Scope | Acceptance |
 | --------- | --------- | ----- | ---------- |
 | 10.1 | Social schema | `Follow`, `Like`, `Comment`, `Report`, `UserBlock`, `ActivityEvent` (publish-time events for public content) | Migration applied |
-| 10.2 | Follows | Follow pets/users; follower counts; follows list | Follow round-trip |
+| 10.2 | Follows | Follow pets/users; follower counts; follows list; **same-kind suggestions** (public pets of the same species/breed as mine) on feed and pet pages | Follow round-trip; Maine Coon owner sees other Maine Coons suggested |
 | 10.3 | Likes | Like public photos/entries; counts; rate-limited | Likes work, spam-limited |
 | 10.4 | Comments | Threaded (1 level) comments on public content; sanitized rendering | Comments post + render safely |
 | 10.5 | Moderation | Owner delete/block; per-pet toggles for comments/likes; report queue + admin view | Owner controls effective |
@@ -466,7 +495,7 @@ Each iteration is small, deployable, tested, and ships behind CI. Detailed step-
 - **Phase 14 — Telegram mini app**: mobile-first pet browsing + quick logging.
 - **Phase 15 — Passkey/WebAuthn**: passwordless login (new, not ported).
 - **Phase 16 — Smart systems & sensors**: device registry, MQTT/HTTP ingestion, sensor charts, threshold alerts, feeder/waterer events into care history.
-- **Phase 17 — AI monitoring (possible paid tier)**: photo triage, anomaly detection on measurements/sensors, care plan suggestions; monetization decisions follow validation.
+- **Phase 17 — AI monitoring (possible paid tier)**: analysis of uploaded photos for early problem detection (yellowing leaves, infestation, skin conditions), symptom photo triage, anomaly detection on measurements/sensors, care plan suggestions; monetization decisions follow validation.
 
 ## 8. Deployment Strategy
 
