@@ -1,0 +1,20 @@
+{
+  "common": {
+    "appName": "Green and Fluffy",
+    "back": "Back to home"
+  },
+  "home": {
+    "title": "Care for every living being you love",
+    "welcome": "Animals and plants — at home, in the garden, on the farm, or on the street. Profiles, photo albums, health diaries, care reminders, and safety recommendations."
+  },
+  "nav": {
+    "home": "Home"
+  },
+  "footer": {
+    "copyright": "© {year} Green and Fluffy"
+  },
+  "theme": {
+    "switchToLight": "Switch to light theme",
+    "switchToDark": "Switch to dark theme"
+  }
+}
