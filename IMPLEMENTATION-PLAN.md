@@ -28,11 +28,11 @@ The project heavily reuses the foundation of the sister project [myfinpro](https
 
 | Layer               | Choice                                             | Notes                                                            |
 | ------------------- | -------------------------------------------------- | ---------------------------------------------------------------- |
-| Monorepo            | pnpm 10 + Turborepo 2                              | Same as myfinpro (`pnpm-workspace.yaml`, `turbo.json`)           |
-| Runtime             | Node.js 24 (latest LTS line)                       | `.nvmrc`, engines pinned                                         |
-| Language            | TypeScript 5.9+ strict (6.x when stable, 7-ready)  | Shared `packages/tsconfig` ported from myfinpro                  |
-| Backend API         | NestJS 11                                          | Modular architecture, DTO validation, all auth logic             |
-| Database            | MySQL 8.4 + Prisma 7 (MariaDB driver adapter)      | Same versions/adapter as myfinpro                                |
+| Monorepo            | pnpm 11 + Turborepo 2                              | pnpm's minimum-release-age supply-chain policy kept on           |
+| Runtime             | Node.js 26 (Current; becomes LTS Oct 2026)         | `.nvmrc`, engines pinned                                         |
+| Language            | TypeScript 6.x strict (7-ready)                    | `packages/tsconfig` modernized for TS6 (nodenext, ES2025)        |
+| Backend API         | NestJS 11 (latest)                                 | Modular architecture, DTO validation, all auth logic             |
+| Database            | MySQL 9.7 LTS + Prisma 7 (MariaDB driver adapter)  | Latest LTS line; adapter pattern proven in myfinpro              |
 | Frontend            | Next.js 16 (App Router) + React 19 + Tailwind 4    | SSR for public pet pages (SEO)                                   |
 | i18n                | next-intl (web)                                    | Locales: en, he (RTL), ru, uk                                    |
 | Auth                | Passport.js in NestJS, custom JWT (no next-auth)   | Ported from myfinpro `apps/api/src/auth/`                        |
@@ -101,6 +101,7 @@ myfinpro currently contains *only* foundation code (auth, users, groups, timezon
 3. Drop finance-only surface (`defaultCurrency`, currency constants) at port time — do not carry dead code.
 4. Every ported subsystem gets its tests ported with it; a port iteration is complete only when its tests pass in this repo.
 5. Fixes discovered here that apply to myfinpro should be backported (note in PR description).
+6. **Always use latest stable versions, verified online at port time** (npm registry, nodejs.org, Docker Hub) — never inherit myfinpro's older pins; adapt ported code to new-version breaking changes instead. (Applied at Phase 0: TypeScript 6, pnpm 11, Node 26, MySQL 9.7 LTS.)
 
 ## 3. Local Development Guide
 

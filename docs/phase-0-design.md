@@ -33,10 +33,10 @@ Copy from the sister repo (paths relative to its root), renaming `myfinpro` → 
 | API bootstrap | `apps/api/src/main.ts`, `app.module.ts`, `config/*`, `health/*`, `common/throttler/*`, `common/decorators/throttle.decorator.ts`, `prisma/prisma.service.ts`, `prisma.config.ts`, jest configs | Includes helmet, CORS, cookie-parser, trust-proxy (Cloudflare IPs), pino, Swagger, `/api/v1` prefix |
 | Web bootstrap | `apps/web/` skeleton: `[locale]` App Router layout, `src/i18n/*`, `messages/*`, Tailwind 4 setup, vitest + playwright configs | Extend messages to 4 locales |
 | Local stack | `docker-compose.yml` | Replace the Haraka dev container with `mailpit` for local mail catching; add media volume |
-| Dockerfiles | `infrastructure/docker/{api,web}.Dockerfile` | Multi-stage, node 24-alpine, `target: production` |
+| Dockerfiles | `infrastructure/docker/{api,web}.Dockerfile` | Multi-stage, node 26-alpine (latest-verified), `target: production` |
 | CI | `.github/workflows/ci.yml`, `pr-check.yml` | Add a `gitleaks` job (new) |
 | CD | `.github/workflows/deploy-staging.yml`, `deploy-production.yml`, `test-staging.yml`, `backup-verify.yml`, `infra-maintenance.yml`; `scripts/deploy.sh`, `rollback.sh`, `cleanup-images.sh`, `backup.sh`, `verify-backup.sh`, `check-backup-age.sh`, `restore.sh` | Rename all paths/containers/networks/images |
-| Compose (envs) | `docker-compose.{staging,production}.{infra,app}.yml` | Own MySQL/Redis/Haraka per env; add media bind mount to app slots |
+| Compose (envs) | `docker-compose.{staging,production}.{infra,app}.yml` | Own MySQL/Redis/Haraka per env (latest verified tags); add media bind mount to app slots |
 | Nginx | `infrastructure/nginx/conf.d/ssl.conf.template`, `cloudflare-ips.conf`, `_default.conf` | Rendered into the **existing shared nginx** — see below |
 | Env templates | `.env.staging.template`, `.env.production.template`, per-app `.env.example` | Placeholder values only |
 
@@ -105,7 +105,7 @@ green-fluffy/
 
 ### 0.4 Local dev stack
 
-1. Port `docker-compose.yml`: `mysql:8.4`, `redis:8-alpine`, `mailpit` (SMTP catcher, web UI), nginx (dev conf), api, web.
+1. Port `docker-compose.yml`: latest-verified `mysql` (9.7 LTS line), `redis`, `mailpit` (SMTP catcher, web UI), nginx (dev conf), api, web.
 2. Volumes: `mysql-data`, `redis-data`, `./media-dev:/media` for the API.
 3. `pnpm db:migrate`, `db:seed` (seed = health-check row for now), `db:studio` wired.
 4. Document the full local loop in README (prereqs → up → migrate → seed → dev).
@@ -113,7 +113,7 @@ green-fluffy/
 
 ### 0.5 CI
 
-1. Port `ci.yml`: jobs lint-and-typecheck (eslint, `tsc --noEmit`, `prettier --check`), unit-tests (`turbo run test` + coverage upload), build (`turbo run build`, includes `prisma generate`). Node 24 + pnpm cache.
+1. Port `ci.yml`: jobs lint-and-typecheck (eslint, `tsc --noEmit`, `prettier --check`), unit-tests (`turbo run test` + coverage upload), build (`turbo run build`, includes `prisma generate`). Node 26 + pnpm cache.
 2. Port `pr-check.yml`: conventional-commit PR titles (lowercase subject), changed-package detection.
 3. Add `gitleaks/gitleaks-action` job (public repo hygiene); also enable GitHub secret scanning + push protection in repo settings.
 4. Branch protection: `main` and `develop` require CI green.

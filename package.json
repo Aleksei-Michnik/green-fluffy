@@ -1,0 +1,48 @@
+{
+  "name": "green-fluffy",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Green and Fluffy — care platform for animals and plants",
+  "packageManager": "pnpm@11.9.0+sha512.bd682d5d03fe525ef7c9fd6780c6884d1e756ac4c9c9fe00c538782824310dcf90e3ddc4f53835f06dfaebd5085e41855e0bcbb3b60de2ac5bbab89e5036f03b",
+  "engines": {
+    "node": ">=26.0.0",
+    "pnpm": ">=11.0.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:api": "pnpm --filter api dev",
+    "dev:web": "pnpm --filter web dev",
+    "build": "turbo run build",
+    "build:api": "pnpm --filter api build",
+    "build:web": "pnpm --filter web build",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yaml,yml}\"",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:unit": "turbo run test:unit",
+    "test:integration": "pnpm --filter api test:integration",
+    "test:e2e": "pnpm --filter web test:e2e",
+    "test:staging": "pnpm --filter api test:staging",
+    "test:e2e:staging": "pnpm --filter web test:e2e:staging",
+    "test:coverage": "turbo run test:coverage",
+    "db:migrate": "pnpm --filter api exec prisma migrate dev",
+    "db:migrate:prod": "pnpm --filter api exec prisma migrate deploy",
+    "db:generate": "pnpm --filter api exec prisma generate",
+    "db:seed": "pnpm --filter api exec prisma db seed",
+    "db:reset": "pnpm --filter api exec prisma migrate reset",
+    "db:studio": "pnpm --filter api exec prisma studio",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:restart": "docker compose restart",
+    "docker:logs": "docker compose logs -f",
+    "docker:build": "docker compose build",
+    "clean": "turbo run clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.4",
+    "turbo": "^2.10.3",
+    "typescript": "^6.0.3"
+  }
+}

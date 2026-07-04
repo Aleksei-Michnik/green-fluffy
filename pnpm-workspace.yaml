@@ -1,0 +1,37 @@
+packages:
+  - apps/*
+  - packages/*
+
+peerDependencyRules:
+  allowedVersions:
+    eslint: '>=10'
+    class-validator: '>=0.15'
+
+allowedDeprecatedVersions:
+  glob: 7.2.3 || 10.5.0
+  inflight: 1.0.6
+  rimraf: 2.7.1
+
+minimumReleaseAgeExclude:
+  - '@turbo/darwin-64@2.10.3'
+  - '@turbo/darwin-arm64@2.10.3'
+  - '@turbo/linux-64@2.10.3'
+  - '@turbo/linux-arm64@2.10.3'
+  - '@turbo/windows-64@2.10.3'
+  - '@turbo/windows-arm64@2.10.3'
+  - turbo@2.10.3
+
+allowBuilds:
+  '@nestjs/core': true
+  '@parcel/watcher': true
+  '@prisma/engines': true
+  '@scarf/scarf': true
+  '@swc/core': true
+  argon2: true
+  cpu-features: true
+  esbuild: true
+  prisma: true
+  protobufjs: true
+  sharp: true
+  ssh2: true
+  unrs-resolver: true

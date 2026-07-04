@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Node Library",
+  "extends": "./base.json",
+  "compilerOptions": {
+    "module": "nodenext",
+    "target": "ES2025",
+    "types": ["node"],
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true
+  }
+}
