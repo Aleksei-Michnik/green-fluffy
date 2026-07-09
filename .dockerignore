@@ -1,0 +1,45 @@
+# Keep the Docker build context small and secret-free.
+node_modules
+**/node_modules
+.pnpm-store
+
+# Build output
+dist
+build
+.next
+out
+.turbo
+**/*.tsbuildinfo
+
+# Env & secrets — never ship into an image
+.env
+.env.*
+!.env.example
+!.env.*.template
+*.pem
+*.key
+*.p12
+
+# VCS & tooling
+.git
+.gitignore
+.github
+.claude
+.vscode
+.idea
+
+# Local data & artifacts
+media-dev
+uploads
+media
+mysql-data
+redis-data
+coverage
+playwright-report
+test-results
+logs
+*.log
+
+# Docs (not needed at build time)
+docs
+*.md

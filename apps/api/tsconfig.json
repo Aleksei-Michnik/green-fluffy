@@ -6,7 +6,12 @@
     "paths": {
       "@/*": ["./src/*"]
     },
-    "types": ["jest", "node"]
+    "types": ["jest", "node"],
+    // Disabled for the API: nest-cli's `deleteOutDir` wipes dist but leaves the
+    // .tsbuildinfo behind, so incremental tsc would skip emit and produce no
+    // dist/main.js. Full emit every build avoids that footgun (nest --watch
+    // keeps its own in-memory state; shared/web keep incremental).
+    "incremental": false
   },
   "include": ["src/**/*", "test/**/*"],
   "exclude": ["node_modules", "dist", "coverage"]

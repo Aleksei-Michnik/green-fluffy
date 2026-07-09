@@ -1,0 +1,192 @@
+# ─────────────────────────────────────────────────────────────
+# Green and Fluffy — Local Development Stack
+# Usage: cp .env.example .env  &&  docker compose up -d
+# Host ports default to non-standard values (3307/6380/8080) so this
+# stack can run alongside the sibling myfinpro stack on one machine.
+# ─────────────────────────────────────────────────────────────
+
+name: green-fluffy
+
+services:
+  # ───── MySQL 9.7 (LTS) ─────
+  mysql:
+    image: mysql:9.7
+    container_name: green-fluffy-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - '${MYSQL_PORT:-3308}:3306'
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./infrastructure/mysql/init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - green-fluffy-net
+    healthcheck:
+      test:
+        ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'root', '-p${MYSQL_ROOT_PASSWORD}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+
+  # ───── Redis 8.8 ─────
+  redis:
+    image: redis:8.8-alpine
+    container_name: green-fluffy-redis
+    restart: unless-stopped
+    ports:
+      - '${REDIS_PORT:-6381}:6379'
+    volumes:
+      - redis_data:/data
+    networks:
+      - green-fluffy-net
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+
+  # ───── Mailpit (SMTP catcher + web UI) ─────
+  mailpit:
+    image: axllent/mailpit:v1.30
+    container_name: green-fluffy-mailpit
+    restart: unless-stopped
+    ports:
+      - '${MAILPIT_SMTP_PORT:-1025}:1025' # SMTP
+      - '${MAILPIT_UI_PORT:-8025}:8025' # Web UI
+    networks:
+      - green-fluffy-net
+    environment:
+      MP_MAX_MESSAGES: 500
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
+  # ───── NestJS API ─────
+  api:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/api.Dockerfile
+      target: development
+    container_name: green-fluffy-api
+    restart: unless-stopped
+    env_file:
+      - ./apps/api/.env
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - '${API_PORT:-3001}:3001'
+    volumes:
+      # App source is mounted for hot reload; shared package + Prisma client
+      # are baked into the image (node_modules preserved by the anon volumes).
+      - ./apps/api:/app/apps/api
+      - ./media-dev:/media
+      - /app/node_modules
+      - /app/apps/api/node_modules
+      # Build output stays container-only (the container runs as root; this
+      # keeps root-owned dist off the host and avoids host/container races).
+      - /app/apps/api/dist
+    networks:
+      - green-fluffy-net
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://localhost:3001/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  # ───── Next.js Web ─────
+  web:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/web.Dockerfile
+      target: development
+    container_name: green-fluffy-web
+    restart: unless-stopped
+    env_file:
+      - ./apps/web/.env
+    environment:
+      NODE_ENV: development
+      # Browser reaches the API through nginx; SSR uses the internal address.
+      NEXT_PUBLIC_API_URL: http://localhost:${NGINX_PORT:-8080}/api/v1
+      API_INTERNAL_URL: http://api:3001/api/v1
+    ports:
+      - '${WEB_PORT:-3000}:3000'
+    volumes:
+      # App source is mounted for hot reload; shared package is baked into
+      # the image (node_modules preserved by the anon volumes).
+      - ./apps/web:/app/apps/web
+      - /app/node_modules
+      - /app/apps/web/node_modules
+      - /app/apps/web/.next
+    networks:
+      - green-fluffy-net
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://localhost:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  # ───── Nginx Reverse Proxy (single-origin, mirrors prod routing) ─────
+  nginx:
+    image: nginx:1.30-alpine
+    container_name: green-fluffy-nginx
+    restart: unless-stopped
+    ports:
+      - '${NGINX_PORT:-8080}:80'
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infrastructure/nginx/conf.d:/etc/nginx/conf.d:ro
+    networks:
+      - green-fluffy-net
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://localhost/health || exit 1']
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  green-fluffy-net:
+    driver: bridge

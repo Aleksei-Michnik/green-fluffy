@@ -28,6 +28,8 @@ redis-data/
 # Uploaded media (runtime data, never in repo)
 uploads/
 media/
+media-dev/*
+!media-dev/.gitkeep
 
 # Test artifacts
 coverage/
