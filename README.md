@@ -4,7 +4,7 @@ Care for any living being you love — animals **and** plants: at home, in the g
 
 Pet & plant profiles, Instagram-like albums and stories, health diaries, feeding/watering logs and reminders, locations with weather monitoring, and safety recommendations ("is this plant dangerous for my cat?").
 
-**Production**: `green-fluffy.michnik.pro` *(not yet configured)* · **Staging**: `stage-green-fluffy.michnik.pro` *(not yet configured)*
+**Production**: `green-fluffy.michnik.pro` _(not yet configured)_ · **Staging**: `stage-green-fluffy.michnik.pro` _(not yet configured)_
 
 ## Documentation
 
@@ -46,14 +46,14 @@ docker compose exec api pnpm db:seed
 
 Then open:
 
-| Service            | URL                                   |
-| ------------------ | ------------------------------------- |
-| Web (via Nginx)    | http://localhost:8080                 |
-| API health         | http://localhost:8080/api/v1/health   |
-| Web (direct)       | http://localhost:3000                 |
-| API (direct)       | http://localhost:3001/api/v1/health   |
-| Swagger docs       | http://localhost:8080/api/docs        |
-| Mailpit (email UI) | http://localhost:8025                 |
+| Service            | URL                                 |
+| ------------------ | ----------------------------------- |
+| Web (via Nginx)    | http://localhost:8080               |
+| API health         | http://localhost:8080/api/v1/health |
+| Web (direct)       | http://localhost:3000               |
+| API (direct)       | http://localhost:3001/api/v1/health |
+| Swagger docs       | http://localhost:8080/api/docs      |
+| Mailpit (email UI) | http://localhost:8025               |
 
 MySQL is reachable on `localhost:3308`, Redis on `localhost:6381`.
 

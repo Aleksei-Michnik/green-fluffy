@@ -21,7 +21,7 @@ Phase 5 delivers the health heart of the app in three sub-sections:
 - **5B — Procedures lifecycle**: surgeries, castration/spaying, dental work, grooming procedures for animals; cutting, grafting, repotting for plants — tracked as **recommended → planned → done/cancelled**, with performer attribution, documents, and reminder hooks.
 - **5C — Care providers directory**: a **shared** directory of vet clinics, vets, gardeners, pond-health organizations, aquarium caretakers, and farm services — referenced from vet visits, procedures, and care events; kept in our own DB and actualized from open data sources; no public testimonials, but links to websites/Google Business profiles.
 
-**The unified timeline principle**: the diary is the single log of *everything* that happens to a pet. Health entries and life events live here natively; care events (feeding/watering, Phase 6) and completed procedures are surfaced into the same timeline with their details (time, quantity, catalog item, performer).
+**The unified timeline principle**: the diary is the single log of _everything_ that happens to a pet. Health entries and life events live here natively; care events (feeding/watering, Phase 6) and completed procedures are surfaced into the same timeline with their details (time, quantity, catalog item, performer).
 
 **Dependencies**: Phase 3 (media), Phase 4 (roles: caretakers write, viewers read; per-entry visibility interacts with public diary sections). Phase 9 later supplies KB-driven procedure recommendations (9.8) into the 5B "recommended" list.
 
@@ -47,7 +47,7 @@ Design choices:
 - **Measurements are first-class rows** (not only JSON) so charts and range queries are cheap; a measurement-type diary entry creates/updates `Measurement` rows transactionally.
 - Documents are metadata over `MediaFile` scans + structured fields (numbers, dates, issuer); **always private** (never in any public DTO — same type-level guarantee as geo).
 - **Procedures are first-class rows** (not just diary entries) because they have a forward-looking lifecycle (recommended/planned) the diary — a log of the past — can't express; completing a procedure creates its linked `type=PROCEDURE` diary entry transactionally.
-- **Providers are shared, global entities** (not per-user): created by users or imported from open data, deduplicated, referenced everywhere a human/organization performs something. Personal data caution: providers are *businesses/professionals in their public role*; the directory stores only their public data (name, kind, public links, locality).
+- **Providers are shared, global entities** (not per-user): created by users or imported from open data, deduplicated, referenced everywhere a human/organization performs something. Personal data caution: providers are _businesses/professionals in their public role_; the directory stores only their public data (name, kind, public links, locality).
 
 ## Database Schema
 
@@ -215,35 +215,35 @@ model ProviderSuggestion {          // user-suggested corrections, maintainer-re
 
 ### `details` JSON per entry type (validated discriminated union)
 
-| Type | details shape |
-| ---- | ------------- |
-| CONDITION | `{ name, status: active|resolved|chronic, diagnosedBy? }` |
-| SYMPTOM | `{ symptoms: string[], severity: mild|moderate|severe }` |
-| MEASUREMENT | `{ measurements: [{metric, value, unit, customName?}] }` → mirrored to `Measurement` rows |
-| TREATMENT | `{ medication?, dosage?, frequency?, startedAt?, endedAt? }` |
-| VACCINATION | `{ vaccine, batch?, nextDueAt? }` — `nextDueAt` feeds Phase 6 health reminders |
-| VET_VISIT | `{ reason?, outcome?, vetName? }` + top-level `providerId` for the clinic |
-| PROCEDURE | `{ procedureId }` — the linked `Procedure` row carries the substance |
-| EVENT | `{ eventKind, ... }` — validated kinds: `birth_giving`, `trauma`, `accident`, `grooming`, `flowering`, `fruiting`, `pest_infestation`, `disaster` (+ `disasterKind: drought\|hurricane\|hail\|fire\|flood\|vandalism\|other`), `other` |
-| OBSERVATION / NOTE | `{}` (title/body carry content) |
+| Type               | details shape                                                                                                                                                                                                                          |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CONDITION          | `{ name, status: active                                                                                                                                                                                                                | resolved | chronic, diagnosedBy? }` |
+| SYMPTOM            | `{ symptoms: string[], severity: mild                                                                                                                                                                                                  | moderate | severe }`                |
+| MEASUREMENT        | `{ measurements: [{metric, value, unit, customName?}] }` → mirrored to `Measurement` rows                                                                                                                                              |
+| TREATMENT          | `{ medication?, dosage?, frequency?, startedAt?, endedAt? }`                                                                                                                                                                           |
+| VACCINATION        | `{ vaccine, batch?, nextDueAt? }` — `nextDueAt` feeds Phase 6 health reminders                                                                                                                                                         |
+| VET_VISIT          | `{ reason?, outcome?, vetName? }` + top-level `providerId` for the clinic                                                                                                                                                              |
+| PROCEDURE          | `{ procedureId }` — the linked `Procedure` row carries the substance                                                                                                                                                                   |
+| EVENT              | `{ eventKind, ... }` — validated kinds: `birth_giving`, `trauma`, `accident`, `grooming`, `flowering`, `fruiting`, `pest_infestation`, `disaster` (+ `disasterKind: drought\|hurricane\|hail\|fire\|flood\|vandalism\|other`), `other` |
+| OBSERVATION / NOTE | `{}` (title/body carry content)                                                                                                                                                                                                        |
 
 ## API Endpoints
 
-| Endpoint | Guard | Notes |
-| -------- | ----- | ----- |
-| `POST /api/v1/pets/:id/diary` | CARETAKER+ | Type-validated; `mediaIds` (already-uploaded) + `alsoInGallery` flag per media; MEASUREMENT type creates `Measurement` rows in same tx |
-| `GET /api/v1/pets/:id/diary` | VIEWER+ (PUBLIC → public entries only when diary section public) | Cursor by `occurredAt`; filters `type[]`, `from`, `to`, `q` (FULLTEXT) |
-| `GET/PATCH/DELETE /api/v1/diary/:entryId` | author or OWNER for delete; CARETAKER edit-own | Edits audit-logged |
-| `GET /api/v1/pets/:id/measurements?metric=&from=&to=` | VIEWER+ | Series for charts; unit-normalized (see below) |
-| `GET /api/v1/pets/:id/registry?type=VACCINATION` | VIEWER+ | Filtered registry with `nextDueAt` status (ok/due-soon/overdue) |
-| `POST/GET/PATCH/DELETE /api/v1/pets/:id/documents` | CARETAKER+ read, OWNER write | Structured fields + scan mediaIds; `GET ?number=` chip search across own pets |
-| `POST/GET/PATCH/DELETE /api/v1/pets/:id/procedures` | CARETAKER+ read, OWNER write | Lifecycle transitions validated (RECOMMENDED→PLANNED→DONE/CANCELLED; direct PLANNED/DONE creation allowed); DONE requires `performedAt`, creates linked diary entry (tx) |
-| `POST /api/v1/procedures/:id/complete` | OWNER | `{performedAt, providerId?, performerName?, notes?, mediaIds?}` → status DONE + diary entry |
-| `GET /api/v1/pets/:id/procedures/recommended` | VIEWER+ | KB-recommended (Phase 9.8) minus already planned/done/dismissed |
-| `GET /api/v1/providers?query=&kind=&near=` | authed | Shared directory search (FULLTEXT name + kind + locality) |
-| `POST /api/v1/providers` | authed | Inline creation (dedup check: same kind + similar name + same locality ⇒ suggest existing) |
-| `GET /api/v1/providers/:id` | authed | Detail with links (website, Google Business) |
-| `POST /api/v1/providers/:id/suggest` | authed | Correction suggestion (maintainer-reviewed queue) |
+| Endpoint                                              | Guard                                                            | Notes                                                                                                                                                                    |
+| ----------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `POST /api/v1/pets/:id/diary`                         | CARETAKER+                                                       | Type-validated; `mediaIds` (already-uploaded) + `alsoInGallery` flag per media; MEASUREMENT type creates `Measurement` rows in same tx                                   |
+| `GET /api/v1/pets/:id/diary`                          | VIEWER+ (PUBLIC → public entries only when diary section public) | Cursor by `occurredAt`; filters `type[]`, `from`, `to`, `q` (FULLTEXT)                                                                                                   |
+| `GET/PATCH/DELETE /api/v1/diary/:entryId`             | author or OWNER for delete; CARETAKER edit-own                   | Edits audit-logged                                                                                                                                                       |
+| `GET /api/v1/pets/:id/measurements?metric=&from=&to=` | VIEWER+                                                          | Series for charts; unit-normalized (see below)                                                                                                                           |
+| `GET /api/v1/pets/:id/registry?type=VACCINATION`      | VIEWER+                                                          | Filtered registry with `nextDueAt` status (ok/due-soon/overdue)                                                                                                          |
+| `POST/GET/PATCH/DELETE /api/v1/pets/:id/documents`    | CARETAKER+ read, OWNER write                                     | Structured fields + scan mediaIds; `GET ?number=` chip search across own pets                                                                                            |
+| `POST/GET/PATCH/DELETE /api/v1/pets/:id/procedures`   | CARETAKER+ read, OWNER write                                     | Lifecycle transitions validated (RECOMMENDED→PLANNED→DONE/CANCELLED; direct PLANNED/DONE creation allowed); DONE requires `performedAt`, creates linked diary entry (tx) |
+| `POST /api/v1/procedures/:id/complete`                | OWNER                                                            | `{performedAt, providerId?, performerName?, notes?, mediaIds?}` → status DONE + diary entry                                                                              |
+| `GET /api/v1/pets/:id/procedures/recommended`         | VIEWER+                                                          | KB-recommended (Phase 9.8) minus already planned/done/dismissed                                                                                                          |
+| `GET /api/v1/providers?query=&kind=&near=`            | authed                                                           | Shared directory search (FULLTEXT name + kind + locality)                                                                                                                |
+| `POST /api/v1/providers`                              | authed                                                           | Inline creation (dedup check: same kind + similar name + same locality ⇒ suggest existing)                                                                               |
+| `GET /api/v1/providers/:id`                           | authed                                                           | Detail with links (website, Google Business)                                                                                                                             |
+| `POST /api/v1/providers/:id/suggest`                  | authed                                                           | Correction suggestion (maintainer-reviewed queue)                                                                                                                        |
 
 Unit handling: values stored as entered (`value` + `unit`); series endpoint normalizes to the metric's canonical unit (kg, cm, °C) for charting and returns both raw and normalized.
 
@@ -279,33 +279,33 @@ UX requirements: composer opens pre-focused with type NOTE (one-tap "just write"
 
 ### 5A: Health Diary & Documents
 
-| # | Work | Done when |
-| - | ---- | --------- |
-| 5.1 | Schema `phase5_health` (diary/measurement/document models + event kinds) + fixtures | Migration applied |
-| 5.2 | Diary API: CRUD, discriminated-union validation (incl. `eventKind` taxonomy), media linking (+`alsoInGallery` sets `MediaFile.inGallery`), filters + FULLTEXT, pagination, audit; access matrix registration | Suite green incl. per-type validation matrix |
-| 5.3 | Timeline UI: entries, day grouping, type/event-kind filters, search box | E2E scroll/filter/search |
-| 5.4 | Composer: type-aware forms (incl. event-kind picker + disaster sub-kind), photo attach, visibility select; edit + delete flows | E2E: symptom entry with 2 photos in <1 min script; flowering event recorded |
-| 5.5 | Measurements: mirror-to-rows logic, series endpoint with normalization, charts + quick-measure dialog | Chart shows mixed-unit series correctly (kg+g entries) |
-| 5.6 | Documents API: CRUD, chip-number search, always-private enforcement (public DTO snapshot re-run) | Docs never appear on any public surface (test) |
-| 5.7 | Documents UI: vault tab, previews, structured form, attach-to-entry (prescription → vet visit) | E2E: passport with scan; prescription linked to visit |
-| 5.8 | Per-entry visibility: PUBLIC entries appear on public pet page when diary section public; interplay tests (entry PUBLIC + section private ⇒ hidden) | Matrix: section × entry visibility → correct exposure |
-| 5.9 | Vaccination/treatment registry + due-status computation (`nextDueAt`), surfaced on health tab; hands off to Phase 6 reminders | Registry E2E; overdue badge logic unit-tested |
+| #   | Work                                                                                                                                                                                                         | Done when                                                                   |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| 5.1 | Schema `phase5_health` (diary/measurement/document models + event kinds) + fixtures                                                                                                                          | Migration applied                                                           |
+| 5.2 | Diary API: CRUD, discriminated-union validation (incl. `eventKind` taxonomy), media linking (+`alsoInGallery` sets `MediaFile.inGallery`), filters + FULLTEXT, pagination, audit; access matrix registration | Suite green incl. per-type validation matrix                                |
+| 5.3 | Timeline UI: entries, day grouping, type/event-kind filters, search box                                                                                                                                      | E2E scroll/filter/search                                                    |
+| 5.4 | Composer: type-aware forms (incl. event-kind picker + disaster sub-kind), photo attach, visibility select; edit + delete flows                                                                               | E2E: symptom entry with 2 photos in <1 min script; flowering event recorded |
+| 5.5 | Measurements: mirror-to-rows logic, series endpoint with normalization, charts + quick-measure dialog                                                                                                        | Chart shows mixed-unit series correctly (kg+g entries)                      |
+| 5.6 | Documents API: CRUD, chip-number search, always-private enforcement (public DTO snapshot re-run)                                                                                                             | Docs never appear on any public surface (test)                              |
+| 5.7 | Documents UI: vault tab, previews, structured form, attach-to-entry (prescription → vet visit)                                                                                                               | E2E: passport with scan; prescription linked to visit                       |
+| 5.8 | Per-entry visibility: PUBLIC entries appear on public pet page when diary section public; interplay tests (entry PUBLIC + section private ⇒ hidden)                                                          | Matrix: section × entry visibility → correct exposure                       |
+| 5.9 | Vaccination/treatment registry + due-status computation (`nextDueAt`), surfaced on health tab; hands off to Phase 6 reminders                                                                                | Registry E2E; overdue badge logic unit-tested                               |
 
 ### 5B: Procedures Lifecycle
 
-| # | Work | Done when |
-| - | ---- | --------- |
+| #    | Work                                                                                                                                                                                                           | Done when                                                                    |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
 | 5.10 | `Procedure` schema (`phase5b_procedures`) + API: lifecycle state machine (RECOMMENDED→PLANNED→DONE/CANCELLED, direct creation in any active state), complete-action creating linked diary entry + media, audit | State-machine unit tests; complete-tx test (diary entry rollback on failure) |
-| 5.11 | Procedures UI: board (Recommended/Planned/History), forms, complete dialog with docs/photos/provider; planned procedures create Phase 6 reminders when scheduled (hook stub if Phase 6 not yet deployed) | E2E: plan castration → schedule → complete → appears in diary with documents |
-| 5.12 | Plant procedures: cutting/grafting/repotting kinds, performer attribution variants (self / provider / named worker); recommended list wired to accept Phase 9.8 KB rules (empty until then) | Plant procedure with gardener provider E2E |
+| 5.11 | Procedures UI: board (Recommended/Planned/History), forms, complete dialog with docs/photos/provider; planned procedures create Phase 6 reminders when scheduled (hook stub if Phase 6 not yet deployed)       | E2E: plan castration → schedule → complete → appears in diary with documents |
+| 5.12 | Plant procedures: cutting/grafting/repotting kinds, performer attribution variants (self / provider / named worker); recommended list wired to accept Phase 9.8 KB rules (empty until then)                    | Plant procedure with gardener provider E2E                                   |
 
 ### 5C: Care Providers Directory
 
-| # | Work | Done when |
-| - | ---- | --------- |
-| 5.13 | `Provider` + `ProviderSuggestion` schema (`phase5c_providers`) + API: search (FULLTEXT + kind + locality), inline create with dedup check, suggestion queue | Dedup: creating "VetClinic Haifa" twice suggests existing; suggestion round-trip |
-| 5.14 | Attribution: `providerId` on diary entries (vet visits) + procedures (+ Phase 6 care events when they land); `ProviderPicker` integrated in all composers | Vet visit attributed to clinic E2E; gardener on cutting E2E |
-| 5.15 | Directory UI: `/providers` search page + provider cards/pages with website & Google Business links (external-link safety: `rel="noopener nofollow"`, URL validation http(s) only) | Directory browsable; invalid link schemes rejected |
+| #    | Work                                                                                                                                                                                                                                                                                                         | Done when                                                                                 |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| 5.13 | `Provider` + `ProviderSuggestion` schema (`phase5c_providers`) + API: search (FULLTEXT + kind + locality), inline create with dedup check, suggestion queue                                                                                                                                                  | Dedup: creating "VetClinic Haifa" twice suggests existing; suggestion round-trip          |
+| 5.14 | Attribution: `providerId` on diary entries (vet visits) + procedures (+ Phase 6 care events when they land); `ProviderPicker` integrated in all composers                                                                                                                                                    | Vet visit attributed to clinic E2E; gardener on cutting E2E                               |
+| 5.15 | Directory UI: `/providers` search page + provider cards/pages with website & Google Business links (external-link safety: `rel="noopener nofollow"`, URL validation http(s) only)                                                                                                                            | Directory browsable; invalid link schemes rejected                                        |
 | 5.16 | Open-data sync: OSM importer (`amenity=veterinary` via Overpass, per-country batches) — match by `sourceRef`, then name+locality similarity; new ⇒ insert `sourceKind=osm`; changed ⇒ update untouched fields only; user-edited fields win; conflicts → suggestion queue; scheduled monthly + manual trigger | Importer idempotent on fixture; user-created record untouched by sync; provenance visible |
 
 ## Testing Strategy

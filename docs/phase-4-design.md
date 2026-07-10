@@ -23,11 +23,11 @@ Phase 4 is the security keystone: it turns creator-only pets into shareable ones
 
 ## Reuse from myfinpro
 
-| Component | Source | Adaptation |
-| --------- | ------ | ---------- |
-| Invite tokens | `Group`/`GroupInviteToken` models + `apps/api/src/group/` service logic (UUID token, SHA-256 hash at rest, 7-day expiry, single-use accept) | Same mechanics, subject = Pet |
-| Role guards | `group-member.guard.ts`, `group-admin.guard.ts` | Generalized `PetAccessGuard(minRole)` |
-| Membership UI | `/groups/[id]` member list, invite link generation, role management, accept-invite page | Restyle to pet context |
+| Component     | Source                                                                                                                                      | Adaptation                            |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| Invite tokens | `Group`/`GroupInviteToken` models + `apps/api/src/group/` service logic (UUID token, SHA-256 hash at rest, 7-day expiry, single-use accept) | Same mechanics, subject = Pet         |
+| Role guards   | `group-member.guard.ts`, `group-admin.guard.ts`                                                                                             | Generalized `PetAccessGuard(minRole)` |
+| Membership UI | `/groups/[id]` member list, invite link generation, role management, accept-invite page                                                     | Restyle to pet context                |
 
 ## Authorization Model
 
@@ -38,17 +38,17 @@ Single source of truth — `PetAccessService.resolveRole(userId|null, petId) →
 - `PUBLIC`: `pet.isPublic` and requester has no higher role (incl. anonymous).
 - `NONE`: everything else → 404 (not 403 — don't leak existence of private pets).
 
-| Capability | PUBLIC | VIEWER | CARETAKER | OWNER |
-| ---------- | ------ | ------ | --------- | ----- |
-| Profile info | ✅ | ✅ | ✅ | ✅ |
-| Photos/albums/stories | if section public | ✅ | ✅ | ✅ |
-| Diary | if section public → public entries only | ✅ | ✅ | ✅ |
-| Feeding/care history | if section public | ✅ | ✅ | ✅ |
-| Precise location | ❌ **never** | ✅ | ✅ | ✅ |
-| Coarse location (city/region) | if section public | ✅ | ✅ | ✅ |
-| Documents | ❌ **never** | ❌ | ✅ | ✅ |
-| Add media/diary/care | ❌ | ❌ | ✅ | ✅ |
-| Edit profile/visibility/members/archive/delete | ❌ | ❌ | ❌ | ✅ |
+| Capability                                     | PUBLIC                                  | VIEWER | CARETAKER | OWNER |
+| ---------------------------------------------- | --------------------------------------- | ------ | --------- | ----- |
+| Profile info                                   | ✅                                      | ✅     | ✅        | ✅    |
+| Photos/albums/stories                          | if section public                       | ✅     | ✅        | ✅    |
+| Diary                                          | if section public → public entries only | ✅     | ✅        | ✅    |
+| Feeding/care history                           | if section public                       | ✅     | ✅        | ✅    |
+| Precise location                               | ❌ **never**                            | ✅     | ✅        | ✅    |
+| Coarse location (city/region)                  | if section public                       | ✅     | ✅        | ✅    |
+| Documents                                      | ❌ **never**                            | ❌     | ✅        | ✅    |
+| Add media/diary/care                           | ❌                                      | ❌     | ✅        | ✅    |
+| Edit profile/visibility/members/archive/delete | ❌                                      | ❌     | ❌        | ✅    |
 
 Per-section visibility (`photos`, `diary`, `feeding`, `location`) applies only when the pet `isPublic`; documents and precise geo are excluded from the public model **at the type level** (no serializer field exists).
 
@@ -90,17 +90,17 @@ model PetInviteToken {
 
 ## API Endpoints
 
-| Endpoint | Guard | Notes |
-| -------- | ----- | ----- |
-| `POST /api/v1/pets/:id/invites` | OWNER | `{ role }` → one-time link `https://<domain>/<locale>/pets/invite/<rawToken>` |
-| `GET /api/v1/pets/invite/:token` | authed | Preview (pet name, role, inviter) without joining |
-| `POST /api/v1/pets/invite/:token/accept` | authed | Single-use; expiry/used checks; audit-logged |
-| `GET /api/v1/pets/:id/members` | VIEWER+ | List with roles |
-| `PATCH /api/v1/pets/:id/members/:userId` | OWNER | Change role |
-| `DELETE /api/v1/pets/:id/members/:userId` | OWNER (or self-leave) | Remove/leave |
-| `PATCH /api/v1/pets/:id/visibility` | OWNER | `isPublic` + per-section map; audit-logged |
-| `GET /api/v1/public/pets/:id` | none (anon) | `PublicPetDto` only; 404 unless `isPublic`; rate-limited; cacheable |
-| `GET /api/v1/public/pets/:id/media` etc. | none | Public sections only, public entries only |
+| Endpoint                                  | Guard                 | Notes                                                                         |
+| ----------------------------------------- | --------------------- | ----------------------------------------------------------------------------- |
+| `POST /api/v1/pets/:id/invites`           | OWNER                 | `{ role }` → one-time link `https://<domain>/<locale>/pets/invite/<rawToken>` |
+| `GET /api/v1/pets/invite/:token`          | authed                | Preview (pet name, role, inviter) without joining                             |
+| `POST /api/v1/pets/invite/:token/accept`  | authed                | Single-use; expiry/used checks; audit-logged                                  |
+| `GET /api/v1/pets/:id/members`            | VIEWER+               | List with roles                                                               |
+| `PATCH /api/v1/pets/:id/members/:userId`  | OWNER                 | Change role                                                                   |
+| `DELETE /api/v1/pets/:id/members/:userId` | OWNER (or self-leave) | Remove/leave                                                                  |
+| `PATCH /api/v1/pets/:id/visibility`       | OWNER                 | `isPublic` + per-section map; audit-logged                                    |
+| `GET /api/v1/public/pets/:id`             | none (anon)           | `PublicPetDto` only; 404 unless `isPublic`; rate-limited; cacheable           |
+| `GET /api/v1/public/pets/:id/media` etc.  | none                  | Public sections only, public entries only                                     |
 
 Retrofit in the same iteration set: **all** Phase 2–3 endpoints switch from `PetOwnerGuard` to `PetAccessGuard(minRole)`, and the media-serving choke point (Phase 3 §Serving) consults `PetAccessService`.
 
@@ -131,17 +131,17 @@ components/sharing/
 
 ## Iteration Plan
 
-| # | Work | Done when |
-| - | ---- | --------- |
-| 4.1 | Schema (`phase4_sharing`): `PetMember`, `PetInviteToken`, `sectionVisibility` | Migration applied |
-| 4.2 | `PetAccessService` + `PetAccessGuard(minRole)`; retrofit all pet/media/album endpoints; 404-not-403 policy | **Access matrix suite** (5 roles × all endpoints) green in CI |
-| 4.3 | Invites: create/preview/accept/revoke API + UI (dialog with copyable link, accept page); member management (list/role/remove/leave); audit | Invite E2E: owner → link → second user joins as caretaker |
-| 4.4 | Visibility: API + `VisibilityPanel`; audit on every change | Section toggles reflected immediately in access checks |
-| 4.5 | `PublicPetDto` + `/public/*` endpoints + serializer snapshot tests + anon throttling | Snapshot proves absence of geo/docs/members fields |
-| 4.6 | Public SSR page `/p/[petId]` + OpenGraph + sitemap + `robots.txt` + `llms.txt`; share button on pet page | Lighthouse SEO ≥ 90; link unfurls with image in Telegram/Slack; crawler files served |
-| 4.7 | Shared-with-me dashboard section; caretaker write-path verification (upload photo, add caption) | Caretaker can add, viewer cannot (E2E) |
-| 4.8 | Account deletion × pets: implement `PetHandlingStrategy` (Phase 1.9 stub): sole-owner pets → choose transfer-to-member or delete; member rows always removed; municipal/ownerless pets keep creator until transfer | Deletion E2E both branches; no orphaned access |
-| 4.9 | Hardening: fuzz public endpoints (invalid ids, enumeration), cache purge behavior, rate limits, `X-Robots-Tag: noindex` on preview-as-public, pen-test checklist pass | Checklist in PR description signed off |
+| #   | Work                                                                                                                                                                                                               | Done when                                                                            |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| 4.1 | Schema (`phase4_sharing`): `PetMember`, `PetInviteToken`, `sectionVisibility`                                                                                                                                      | Migration applied                                                                    |
+| 4.2 | `PetAccessService` + `PetAccessGuard(minRole)`; retrofit all pet/media/album endpoints; 404-not-403 policy                                                                                                         | **Access matrix suite** (5 roles × all endpoints) green in CI                        |
+| 4.3 | Invites: create/preview/accept/revoke API + UI (dialog with copyable link, accept page); member management (list/role/remove/leave); audit                                                                         | Invite E2E: owner → link → second user joins as caretaker                            |
+| 4.4 | Visibility: API + `VisibilityPanel`; audit on every change                                                                                                                                                         | Section toggles reflected immediately in access checks                               |
+| 4.5 | `PublicPetDto` + `/public/*` endpoints + serializer snapshot tests + anon throttling                                                                                                                               | Snapshot proves absence of geo/docs/members fields                                   |
+| 4.6 | Public SSR page `/p/[petId]` + OpenGraph + sitemap + `robots.txt` + `llms.txt`; share button on pet page                                                                                                           | Lighthouse SEO ≥ 90; link unfurls with image in Telegram/Slack; crawler files served |
+| 4.7 | Shared-with-me dashboard section; caretaker write-path verification (upload photo, add caption)                                                                                                                    | Caretaker can add, viewer cannot (E2E)                                               |
+| 4.8 | Account deletion × pets: implement `PetHandlingStrategy` (Phase 1.9 stub): sole-owner pets → choose transfer-to-member or delete; member rows always removed; municipal/ownerless pets keep creator until transfer | Deletion E2E both branches; no orphaned access                                       |
+| 4.9 | Hardening: fuzz public endpoints (invalid ids, enumeration), cache purge behavior, rate limits, `X-Robots-Tag: noindex` on preview-as-public, pen-test checklist pass                                              | Checklist in PR description signed off                                               |
 
 ## Testing Strategy
 

@@ -125,16 +125,16 @@ Also in this phase: activate `Pet.avatarMediaId` and `User.avatarMediaId` FKs (e
 
 ## API Endpoints
 
-| Endpoint | Notes |
-| -------- | ----- |
-| `POST /api/v1/media` | multipart; fields: file, `petId?`, `caption?`, `inGallery?` |
-| `GET /api/v1/media/:id/:variant` | `variant ∈ original|thumb|medium|large|poster`; auth-checked streaming |
-| `DELETE /api/v1/media/:id` | owner of media or pet owner; removes files + quota decrement |
-| `PATCH /api/v1/media/:id` | caption, `inGallery` |
-| `GET /api/v1/pets/:id/media` | gallery: cursor-paginated, newest first |
-| `POST /api/v1/pets/:id/avatar` / `POST /api/v1/users/me/avatar` | upload + square-crop variants (256/64) |
-| `GET /api/v1/users/me/storage` | `{ usedBytes, quotaBytes }` |
-| Albums | `POST/GET/PATCH/DELETE /api/v1/pets/:id/albums`, `POST/DELETE/PATCH albums/:albumId/items` (add/remove/reorder/caption), `PATCH albums/:albumId/cover` |
+| Endpoint                                                        | Notes                                                                                                                                                  |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `POST /api/v1/media`                                            | multipart; fields: file, `petId?`, `caption?`, `inGallery?`                                                                                            |
+| `GET /api/v1/media/:id/:variant`                                | `variant ∈ original                                                                                                                                    | thumb | medium | large | poster`; auth-checked streaming |
+| `DELETE /api/v1/media/:id`                                      | owner of media or pet owner; removes files + quota decrement                                                                                           |
+| `PATCH /api/v1/media/:id`                                       | caption, `inGallery`                                                                                                                                   |
+| `GET /api/v1/pets/:id/media`                                    | gallery: cursor-paginated, newest first                                                                                                                |
+| `POST /api/v1/pets/:id/avatar` / `POST /api/v1/users/me/avatar` | upload + square-crop variants (256/64)                                                                                                                 |
+| `GET /api/v1/users/me/storage`                                  | `{ usedBytes, quotaBytes }`                                                                                                                            |
+| Albums                                                          | `POST/GET/PATCH/DELETE /api/v1/pets/:id/albums`, `POST/DELETE/PATCH albums/:albumId/items` (add/remove/reorder/caption), `PATCH albums/:albumId/cover` |
 
 ## Frontend Pages and Components
 
@@ -154,17 +154,17 @@ components/album/
 
 ## Iteration Plan
 
-| # | Work | Done when |
-| - | ---- | --------- |
-| 3.1 | `StorageAdapter` + local FS impl + `MediaFile` model (`phase3_media` migration) + `MEDIA_ROOT` volume in dev/staging/prod compose + deploy bind mounts | Adapter unit tests; staging volume writable and on backup path (verified in 3.9) |
-| 3.2 | Upload endpoint: sniffing, caps, quota, EXIF re-encode, variants; quota service | Security tests: MIME spoof rejected, oversize 413, quota 413, EXIF-GPS absent from output bytes |
-| 3.3 | Serving endpoint: streaming, ETag, cache headers, range | 403 for other users; video seek works |
-| 3.4 | Pet gallery UI: Photos tab, dropzone (multi-file + mobile camera), grid, lightbox, delete, captions; pet avatar | E2E: upload → appears → delete → quota restored |
-| 3.5 | Albums API + tests | CRUD + ordering + cover + uniqueness |
-| 3.6 | Albums UI: grid, album view, manage dialog (add from gallery, reorder, captions, cover) | E2E album lifecycle |
-| 3.7 | User avatar + storage bar in settings; avatar crop | Avatar renders in header/comments-to-be |
-| 3.8 | Video: upload within caps, inline player; async poster-frame job (ffmpeg via BullMQ — first queue use if before Phase 6, otherwise reuse) | Video plays; poster appears ≤ 1 min after upload |
-| 3.9 | Ops: media dir added to `backup.sh` archive + restore verification; orphan-file/quota-drift reconciliation job; deleted-file purge job (soft-deleted 30 days) | Restore drill includes media; reconciliation logs zero drift on staging |
+| #   | Work                                                                                                                                                          | Done when                                                                                       |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| 3.1 | `StorageAdapter` + local FS impl + `MediaFile` model (`phase3_media` migration) + `MEDIA_ROOT` volume in dev/staging/prod compose + deploy bind mounts        | Adapter unit tests; staging volume writable and on backup path (verified in 3.9)                |
+| 3.2 | Upload endpoint: sniffing, caps, quota, EXIF re-encode, variants; quota service                                                                               | Security tests: MIME spoof rejected, oversize 413, quota 413, EXIF-GPS absent from output bytes |
+| 3.3 | Serving endpoint: streaming, ETag, cache headers, range                                                                                                       | 403 for other users; video seek works                                                           |
+| 3.4 | Pet gallery UI: Photos tab, dropzone (multi-file + mobile camera), grid, lightbox, delete, captions; pet avatar                                               | E2E: upload → appears → delete → quota restored                                                 |
+| 3.5 | Albums API + tests                                                                                                                                            | CRUD + ordering + cover + uniqueness                                                            |
+| 3.6 | Albums UI: grid, album view, manage dialog (add from gallery, reorder, captions, cover)                                                                       | E2E album lifecycle                                                                             |
+| 3.7 | User avatar + storage bar in settings; avatar crop                                                                                                            | Avatar renders in header/comments-to-be                                                         |
+| 3.8 | Video: upload within caps, inline player; async poster-frame job (ffmpeg via BullMQ — first queue use if before Phase 6, otherwise reuse)                     | Video plays; poster appears ≤ 1 min after upload                                                |
+| 3.9 | Ops: media dir added to `backup.sh` archive + restore verification; orphan-file/quota-drift reconciliation job; deleted-file purge job (soft-deleted 30 days) | Restore drill includes media; reconciliation logs zero drift on staging                         |
 
 ## Testing Strategy
 

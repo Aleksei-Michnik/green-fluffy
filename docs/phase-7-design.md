@@ -17,7 +17,7 @@
 
 ## Overview
 
-Phase 7 attaches **where** to pets: a map-picked location (point now; polygons arrive with groups in Phase 8 but the schema lands here), sun/shade placement, live weather and forecasts from Open-Meteo, and weather-driven alerts (frost, heat, storm, dry spell) through the Phase 6 notification pipeline. Geo is the most sensitive data in the app — the privacy rules from plan §4.4 are implemented and *proven* here.
+Phase 7 attaches **where** to pets: a map-picked location (point now; polygons arrive with groups in Phase 8 but the schema lands here), sun/shade placement, live weather and forecasts from Open-Meteo, and weather-driven alerts (frost, heat, storm, dry spell) through the Phase 6 notification pipeline. Geo is the most sensitive data in the app — the privacy rules from plan §4.4 are implemented and _proven_ here.
 
 **Dependencies**: Phase 4 (visibility model), Phase 6 (notification pipeline for alerts; if Phase 7 is built first, 7.7 waits for 6.x). Only open solutions: Leaflet + OSM tiles, Nominatim, Open-Meteo (**no API keys anywhere** — consistent with the public repo).
 
@@ -35,11 +35,11 @@ apps/web/src/components/map/           # client-only (dynamic import, no SSR)
   MapPicker.tsx  LocationSearch.tsx  CoarseLocationLabel.tsx  MapView.tsx
 ```
 
-| Service | Use | Constraints honored |
-| ------- | --- | ------------------- |
-| OSM raster tiles | map display | attribution, browser-side loading only, low volume |
-| Nominatim | address search + reverse geocode | ≤1 req/s (server-side queue), custom User-Agent, results cached in Redis 30 d + persisted coarse fields |
-| Open-Meteo | current/forecast/daily (temp, humidity, wind, precipitation, UV, sunrise/sunset) | free non-commercial, no key; cache per rounded coordinate |
+| Service          | Use                                                                              | Constraints honored                                                                                     |
+| ---------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| OSM raster tiles | map display                                                                      | attribution, browser-side loading only, low volume                                                      |
+| Nominatim        | address search + reverse geocode                                                 | ≤1 req/s (server-side queue), custom User-Agent, results cached in Redis 30 d + persisted coarse fields |
+| Open-Meteo       | current/forecast/daily (temp, humidity, wind, precipitation, UV, sunrise/sunset) | free non-commercial, no key; cache per rounded coordinate                                               |
 
 All third-party calls go through the API (server-side) — the browser talks only to our API and OSM tile servers.
 
@@ -107,15 +107,15 @@ Plus: EXIF GPS already stripped at upload (Phase 3); audit log on location chang
 
 ## API Endpoints
 
-| Endpoint | Guard | Notes |
-| -------- | ----- | ----- |
-| `PUT /api/v1/pets/:id/location` | OWNER | `{lat,lng,address?}` → saves + resolves coarse; audit |
-| `DELETE /api/v1/pets/:id/location` | OWNER | |
-| `GET /api/v1/pets/:id/location` | VIEWER+ | Precise (public callers get coarse via the pet DTOs, not this endpoint) |
-| `GET /api/v1/geocode/search?q=` | authed | Proxied Nominatim search (throttled, cached) for the picker |
-| `PATCH /api/v1/pets/:id` (placement) | OWNER | Existing endpoint; placement enum |
-| `GET /api/v1/pets/:id/weather` | VIEWER+ | Normalized weather DTO; 404 if no location |
-| `POST/GET/PATCH/DELETE /api/v1/weather-alert-rules` | owner | Per pet (group in Phase 8) |
+| Endpoint                                            | Guard   | Notes                                                                   |
+| --------------------------------------------------- | ------- | ----------------------------------------------------------------------- |
+| `PUT /api/v1/pets/:id/location`                     | OWNER   | `{lat,lng,address?}` → saves + resolves coarse; audit                   |
+| `DELETE /api/v1/pets/:id/location`                  | OWNER   |                                                                         |
+| `GET /api/v1/pets/:id/location`                     | VIEWER+ | Precise (public callers get coarse via the pet DTOs, not this endpoint) |
+| `GET /api/v1/geocode/search?q=`                     | authed  | Proxied Nominatim search (throttled, cached) for the picker             |
+| `PATCH /api/v1/pets/:id` (placement)                | OWNER   | Existing endpoint; placement enum                                       |
+| `GET /api/v1/pets/:id/weather`                      | VIEWER+ | Normalized weather DTO; 404 if no location                              |
+| `POST/GET/PATCH/DELETE /api/v1/weather-alert-rules` | owner   | Per pet (group in Phase 8)                                              |
 
 ## Frontend Pages and Components
 
@@ -127,16 +127,16 @@ Plus: EXIF GPS already stripped at upload (Phase 3); audit log on location chang
 
 ## Iteration Plan
 
-| # | Work | Done when |
-| - | ---- | --------- |
-| 7.1 | Schema `phase7_geo` (Location, WeatherAlertRule, Pet FK) | Migration applied |
-| 7.2 | Map picker: Leaflet setup, pin, geocode search proxy (throttle+cache), save/delete location; owner-gated page | E2E: set location by search and by pin-drag |
-| 7.3 | Reverse geocoding: save-time coarse resolution + `CoarseLocationLabel` on public page; Nominatim client hardening (queue, UA, cache) | Public page shows city/country only; Nominatim called once per save (cache test) |
-| 7.4 | Placement UI + display; suggested-defaults hook for alert rules | Placement editable; shown on profile |
-| 7.5 | Open-Meteo client: normalized DTO, Redis cache, circuit breaker, unit handling | Contract tests against recorded fixtures; cache-hit ratio visible in logs |
-| 7.6 | WeatherCard on pet page (+ Today board strip for located outdoor plants) | Card renders forecast + daylight for a Haifa fixture |
-| 7.7 | Alert rules: CRUD + hourly evaluation job + dedupe + notifications via dispatcher | Staging: frost alert fires for a fixture location with sub-zero forecast (mocked provider on CI, real on staging) |
-| 7.8 | **Geo privacy verification sweep**: response-schema walker, SSR/OG/sitemap scans, log redaction, audit coverage — added to standing CI | Sweep green; deliberately-planted leak in a test branch is caught |
+| #   | Work                                                                                                                                   | Done when                                                                                                         |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| 7.1 | Schema `phase7_geo` (Location, WeatherAlertRule, Pet FK)                                                                               | Migration applied                                                                                                 |
+| 7.2 | Map picker: Leaflet setup, pin, geocode search proxy (throttle+cache), save/delete location; owner-gated page                          | E2E: set location by search and by pin-drag                                                                       |
+| 7.3 | Reverse geocoding: save-time coarse resolution + `CoarseLocationLabel` on public page; Nominatim client hardening (queue, UA, cache)   | Public page shows city/country only; Nominatim called once per save (cache test)                                  |
+| 7.4 | Placement UI + display; suggested-defaults hook for alert rules                                                                        | Placement editable; shown on profile                                                                              |
+| 7.5 | Open-Meteo client: normalized DTO, Redis cache, circuit breaker, unit handling                                                         | Contract tests against recorded fixtures; cache-hit ratio visible in logs                                         |
+| 7.6 | WeatherCard on pet page (+ Today board strip for located outdoor plants)                                                               | Card renders forecast + daylight for a Haifa fixture                                                              |
+| 7.7 | Alert rules: CRUD + hourly evaluation job + dedupe + notifications via dispatcher                                                      | Staging: frost alert fires for a fixture location with sub-zero forecast (mocked provider on CI, real on staging) |
+| 7.8 | **Geo privacy verification sweep**: response-schema walker, SSR/OG/sitemap scans, log redaction, audit coverage — added to standing CI | Sweep green; deliberately-planted leak in a test branch is caught                                                 |
 
 ## Testing Strategy
 

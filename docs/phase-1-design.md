@@ -25,14 +25,14 @@ Phase 1 ports myfinpro's complete, production-proven account system: email+passw
 
 ## Reuse from myfinpro
 
-| Component | Source (myfinpro repo) | Deviation |
-| --------- | ---------------------- | --------- |
-| Auth module | `apps/api/src/auth/**` — controller, service, `services/{token,refresh-token,password,oauth,email-verification,password-reset,account-deletion,account-cleanup}.service.ts`, `strategies/{local,jwt,google}.strategy.ts`, `guards/*`, `utils/telegram-auth.util.ts`, `decorators/current-user.decorator.ts`, `interfaces/jwt-payload.interface.ts`, `constants/auth-errors.ts`, `dto/*` | Drop `defaultCurrency` from DTOs/responses; add `avatarUrl`/`bio` to profile |
-| Prisma models | `User`, `RefreshToken`, `OAuthProvider`, `EmailVerificationToken`, `PasswordResetToken`, `AuditLog` from `apps/api/prisma/schema.prisma` | See [schema deltas](#database-schema) |
-| Mail | `apps/api/src/mail/mail.service.ts`, `infrastructure/haraka/` | Re-brand, ×4 locales, own DKIM key + mail domain |
-| Web auth | `apps/web/src/lib/auth/{auth-context.tsx,types.ts}`, `apps/web/src/components/auth/*` (`TelegramLoginButton`, `TimezoneDetector`, `ProtectedRoute`, forms), `apps/web/src/app/[locale]/auth/*`, `settings/account/page.tsx` | Restyle; strings ×4 locales |
-| Session for OAuth state | express-session config in `apps/api/src/main.ts` (in-memory, 5-min TTL, `__oauth_session` cookie) | As-is |
-| Reference docs | myfinpro `docs/phase-1-design.md`, `phase-2-design.md`, `phase-4-design.md`, `phase-4-smtp-design.md` | Read before porting |
+| Component               | Source (myfinpro repo)                                                                                                                                                                                                                                                                                                                                                                  | Deviation                                                                    |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Auth module             | `apps/api/src/auth/**` — controller, service, `services/{token,refresh-token,password,oauth,email-verification,password-reset,account-deletion,account-cleanup}.service.ts`, `strategies/{local,jwt,google}.strategy.ts`, `guards/*`, `utils/telegram-auth.util.ts`, `decorators/current-user.decorator.ts`, `interfaces/jwt-payload.interface.ts`, `constants/auth-errors.ts`, `dto/*` | Drop `defaultCurrency` from DTOs/responses; add `avatarUrl`/`bio` to profile |
+| Prisma models           | `User`, `RefreshToken`, `OAuthProvider`, `EmailVerificationToken`, `PasswordResetToken`, `AuditLog` from `apps/api/prisma/schema.prisma`                                                                                                                                                                                                                                                | See [schema deltas](#database-schema)                                        |
+| Mail                    | `apps/api/src/mail/mail.service.ts`, `infrastructure/haraka/`                                                                                                                                                                                                                                                                                                                           | Re-brand, ×4 locales, own DKIM key + mail domain                             |
+| Web auth                | `apps/web/src/lib/auth/{auth-context.tsx,types.ts}`, `apps/web/src/components/auth/*` (`TelegramLoginButton`, `TimezoneDetector`, `ProtectedRoute`, forms), `apps/web/src/app/[locale]/auth/*`, `settings/account/page.tsx`                                                                                                                                                             | Restyle; strings ×4 locales                                                  |
+| Session for OAuth state | express-session config in `apps/api/src/main.ts` (in-memory, 5-min TTL, `__oauth_session` cookie)                                                                                                                                                                                                                                                                                       | As-is                                                                        |
+| Reference docs          | myfinpro `docs/phase-1-design.md`, `phase-2-design.md`, `phase-4-design.md`, `phase-4-smtp-design.md`                                                                                                                                                                                                                                                                                   | Read before porting                                                          |
 
 ## Database Schema
 
@@ -72,18 +72,18 @@ model User {
 
 All ported, under `/api/v1/auth` (rate limits via ported `@CustomThrottle`):
 
-| Endpoint | Notes |
-| -------- | ----- |
-| `POST register` | email + password (≥8, upper/lower/digit) + name + consent flag (new, see 1.10); optional `locale` |
-| `POST login`, `POST refresh`, `POST logout` | JWT access 15 min; refresh = opaque UUID, SHA-256-hashed, rotating, reuse-detected, httpOnly `sameSite=strict` cookie at `/api` |
-| `GET me`, `PATCH profile` | profile incl. `timezone` (IANA string), `locale` (validated against `LOCALES`), `name`, `bio` |
-| `POST send-verification-email`, `GET verify-email` | 24 h token |
-| `POST forgot-password`, `POST reset-password` | 1 h token, revoke-all-sessions on reset |
-| `POST change-password` | argon2 verify + revoke all refresh tokens; OAuth-only users get explicit error directing to reset flow |
-| `GET google`, `GET google/callback` | Passport google-oauth20, `state:true`; callback → find-or-create by verified email → 302 to `https://${SERVER_NAME}/${locale}/auth/callback?token=…` |
-| `POST telegram/callback`, `POST link/telegram` | HMAC-SHA256 widget verification (`secret = sha256(botToken)`), 24 h freshness; synthetic email `telegram_<id>@telegram.user` |
-| `GET connected-accounts`, `DELETE connected-accounts/:provider` | unlink guarded: cannot remove last login method |
-| `POST delete-account`, `POST cancel-deletion` | soft delete, 30-day grace, login reactivates within grace; hard-delete scheduler (`@nestjs/schedule` daily) — **pet handling stubbed until Phase 4.8** |
+| Endpoint                                                        | Notes                                                                                                                                                  |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `POST register`                                                 | email + password (≥8, upper/lower/digit) + name + consent flag (new, see 1.10); optional `locale`                                                      |
+| `POST login`, `POST refresh`, `POST logout`                     | JWT access 15 min; refresh = opaque UUID, SHA-256-hashed, rotating, reuse-detected, httpOnly `sameSite=strict` cookie at `/api`                        |
+| `GET me`, `PATCH profile`                                       | profile incl. `timezone` (IANA string), `locale` (validated against `LOCALES`), `name`, `bio`                                                          |
+| `POST send-verification-email`, `GET verify-email`              | 24 h token                                                                                                                                             |
+| `POST forgot-password`, `POST reset-password`                   | 1 h token, revoke-all-sessions on reset                                                                                                                |
+| `POST change-password`                                          | argon2 verify + revoke all refresh tokens; OAuth-only users get explicit error directing to reset flow                                                 |
+| `GET google`, `GET google/callback`                             | Passport google-oauth20, `state:true`; callback → find-or-create by verified email → 302 to `https://${SERVER_NAME}/${locale}/auth/callback?token=…`   |
+| `POST telegram/callback`, `POST link/telegram`                  | HMAC-SHA256 widget verification (`secret = sha256(botToken)`), 24 h freshness; synthetic email `telegram_<id>@telegram.user`                           |
+| `GET connected-accounts`, `DELETE connected-accounts/:provider` | unlink guarded: cannot remove last login method                                                                                                        |
+| `POST delete-account`, `POST cancel-deletion`                   | soft delete, 30-day grace, login reactivates within grace; hard-delete scheduler (`@nestjs/schedule` daily) — **pet handling stubbed until Phase 4.8** |
 
 ## Frontend Pages and Components
 
@@ -106,33 +106,43 @@ Manual, documented steps (no values in repo):
 ## Iteration Plan
 
 ### 1.1 Auth schema
+
 Port the six models with the `User` deltas above; migration `phase1_accounts`; port model-level tests. **Done**: migration applied to staging via normal deploy.
 
 ### 1.2 Email+password auth
+
 Port auth module core: register/login/refresh/logout/me, password service (argon2id 64MB/3/4), token service, refresh rotation + reuse detection, local + jwt strategies/guards, `@CurrentUser`, error constants, audit logging of auth events. Port unit + integration tests (Testcontainers). Wire `AuthModule` into `AppModule`. **Done**: full ported test suite green; endpoints functional via Swagger on staging.
 
 ### 1.3 Mail service
+
 Port `MailModule` + Haraka container into `docker-compose.<env>.infra.yml`; local dev keeps mailpit. Re-brand templates; add ru/uk variants (mirroring existing en/he structure), template selection by `User.locale`. DNS work per [External Setup](#external-setup-oauth-telegram-mail-dns). **Done**: staging registration email hits a real inbox with DKIM+SPF pass (check headers / mail-tester score ≥ 9).
 
 ### 1.4 Email verification + password reset
+
 Port both token flows (backend + pages + resend + banner for unverified users). **Done**: E2E register → verify → forgot → reset → login green in CI.
 
 ### 1.5 Google OAuth
+
 Port strategy/guard/callback + express-session state config. External setup done first. **Done**: staging round-trip creates user, links by verified email on existing account, issues JWT; integration tests with mocked Google profile green.
 
 ### 1.6 Telegram login
+
 Port `telegram-auth.util.ts` (HMAC verify), callback + link endpoints, `TelegramLoginButton`. **Done**: staging Telegram login + linking work; util unit tests (valid/expired/tampered hash) green.
 
 ### 1.7 Auth UI
+
 Port remaining auth pages + context + guards; restyle to green-fluffy visual identity (green/nature palette; keep structure); translate ×4. **Done**: Playwright E2E login/register/logout in all four locales, RTL screenshot check for `he`.
 
 ### 1.8 Profile & settings
+
 Port settings/account page + `PATCH profile` + `TimezoneDetector`; add `bio`; avatar upload deferred to Phase 3 (placeholder with initials). **Done**: timezone auto-detected on first login; locale switch persists and re-renders; connected accounts manageable.
 
 ### 1.9 Account deletion
+
 Port soft-delete service, cancel/reactivate, deletion email, daily hard-delete scheduler + audit-log anonymization. Pet-transfer logic is a stub interface (`PetHandlingStrategy`) with TODO wired for Phase 4.8. **Done**: delete → banner → cancel; grace-expiry hard-delete covered by unit tests with faked clock.
 
 ### 1.10 Legal + consent
+
 Terms + privacy pages (×4), registration consent checkbox (required, stored on user record with timestamp), global footer. Privacy policy written for this app: geo data, media, public pages, social features, retention, export (Phase 12). **Done**: registration blocked without consent; pages live in all locales.
 
 ## Testing Strategy

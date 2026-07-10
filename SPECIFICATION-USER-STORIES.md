@@ -2,7 +2,7 @@
 
 An application to care for any living being you love — animals and plants, at home, in the garden, on the farm, or on the street. Profiles, photo albums and stories, health diaries, feeding and care reminders, locations and weather, and safety recommendations ("is this plant dangerous for my cat?").
 
-**Terminology**: throughout this document, a **"pet"** means any tracked living being — an animal *or* a plant, owned or not (a street tree, a stray dog, a wheat field, a lion family). A **"member"** is a user granted access to a private pet by its owner. A **"group"** is a collection of pets managed together (a flower patch, a fish tank, a cat colony, a field of wheat).
+**Terminology**: throughout this document, a **"pet"** means any tracked living being — an animal _or_ a plant, owned or not (a street tree, a stray dog, a wheat field, a lion family). A **"member"** is a user granted access to a private pet by its owner. A **"group"** is a collection of pets managed together (a flower patch, a fish tank, a cat colony, a field of wheat).
 
 **Scope decisions** (confirmed):
 
@@ -151,7 +151,7 @@ An application to care for any living being you love — animals and plants, at 
 
 ### Telegram Bot & Mini App
 
-- As a Telegram user, I can receive reminders and alerts via the bot so that notifications reach me where I chat. *(Send-only notifications arrive earlier — see Feeding & Care.)*
+- As a Telegram user, I can receive reminders and alerts via the bot so that notifications reach me where I chat. _(Send-only notifications arrive earlier — see Feeding & Care.)_
 - As a Telegram user, I can log a feeding or diary entry conversationally, including sending a photo ("here are the yellow leaves") so that logging is instant.
 - As a Telegram user, I can open a mini app to browse my pets and history on mobile.
 

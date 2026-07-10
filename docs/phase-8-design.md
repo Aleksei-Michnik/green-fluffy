@@ -17,7 +17,7 @@
 
 Phase 8 introduces **groups of pets** — beings living and cared for together: a flower patch, a wheat field, a greenhouse bench, a fish tank, a bird cage, an apartment's cats, a stray dog pack, a lion family. Groups get their own locations (including **drawn polygon boundaries** for fields and habitats), group-level care events ("watered the field"), reminders, weather + alerts, sharing, and public pages. Groups also support a **headcount** for populations that don't warrant individual profiles ("~200 wheat plants", "12 guppies").
 
-Deliberate reuse: groups plug into the *existing* care/reminder/weather/sharing machinery via the `groupId` columns and access patterns laid down in Phases 4–7 — this phase is mostly wiring, boundaries UI, and a second subject type, not new subsystems.
+Deliberate reuse: groups plug into the _existing_ care/reminder/weather/sharing machinery via the `groupId` columns and access patterns laid down in Phases 4–7 — this phase is mostly wiring, boundaries UI, and a second subject type, not new subsystems.
 
 **Dependencies**: Phases 4, 6, 7. (The user-collaboration mechanics again mirror myfinpro's group module, as adapted in Phase 4.)
 
@@ -36,7 +36,7 @@ apps/web/src/
     MemberPetsPanel.tsx (add/move pets)  BoundaryEditor.tsx (leaflet-geoman)
 ```
 
-`SubjectAccessService` generalization: `PetAccessService` (Phase 4) is refactored to resolve roles for a *subject* = pet | group with identical role semantics (OWNER/CARETAKER/VIEWER/PUBLIC/NONE) and identical member/invite mechanics. One service, two subject tables — care, media, reminders, weather all consult the same resolver.
+`SubjectAccessService` generalization: `PetAccessService` (Phase 4) is refactored to resolve roles for a _subject_ = pet | group with identical role semantics (OWNER/CARETAKER/VIEWER/PUBLIC/NONE) and identical member/invite mechanics. One service, two subject tables — care, media, reminders, weather all consult the same resolver.
 
 ## Database Schema
 
@@ -114,16 +114,16 @@ Semantics:
 
 Mirrors the pet surface — same guard semantics via `SubjectAccessService`:
 
-| Endpoint | Guard | Notes |
-| -------- | ----- | ----- |
-| `POST/GET/PATCH/DELETE /api/v1/groups` | authed / OWNER | CRUD; list = own + member groups |
-| `POST /api/v1/groups/:id/pets` / `DELETE :id/pets/:petId` | OWNER (pet: own or managed) | Add requires caller has OWNER on the pet too |
-| `GET /api/v1/groups/:id/pets` | VIEWER+ | Member pets (public callers: public pets only) |
-| `PUT/DELETE /api/v1/groups/:id/location` | OWNER | Point **or polygon** (GeoJSON validated: closed ring, ≤500 vertices, area sanity); centroid + area computed server-side |
-| `POST /api/v1/groups/:id/care-events`, `GET …` | CARETAKER+ | Same care API shape as pets |
-| Reminders / weather / alert-rules for groups | as pets | Existing endpoints accept `groupId` subject |
-| Invites/members/visibility for groups | as pets | Same flows, `pet-group` variants |
-| `GET /api/v1/public/groups/:id` | anon | `PublicGroupDto`: coarse location only, public member pets, **no polygon** |
+| Endpoint                                                  | Guard                       | Notes                                                                                                                   |
+| --------------------------------------------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `POST/GET/PATCH/DELETE /api/v1/groups`                    | authed / OWNER              | CRUD; list = own + member groups                                                                                        |
+| `POST /api/v1/groups/:id/pets` / `DELETE :id/pets/:petId` | OWNER (pet: own or managed) | Add requires caller has OWNER on the pet too                                                                            |
+| `GET /api/v1/groups/:id/pets`                             | VIEWER+                     | Member pets (public callers: public pets only)                                                                          |
+| `PUT/DELETE /api/v1/groups/:id/location`                  | OWNER                       | Point **or polygon** (GeoJSON validated: closed ring, ≤500 vertices, area sanity); centroid + area computed server-side |
+| `POST /api/v1/groups/:id/care-events`, `GET …`            | CARETAKER+                  | Same care API shape as pets                                                                                             |
+| Reminders / weather / alert-rules for groups              | as pets                     | Existing endpoints accept `groupId` subject                                                                             |
+| Invites/members/visibility for groups                     | as pets                     | Same flows, `pet-group` variants                                                                                        |
+| `GET /api/v1/public/groups/:id`                           | anon                        | `PublicGroupDto`: coarse location only, public member pets, **no polygon**                                              |
 
 ## Frontend Pages and Components
 
@@ -136,16 +136,16 @@ Mirrors the pet surface — same guard semantics via `SubjectAccessService`:
 
 ## Iteration Plan
 
-| # | Work | Done when |
-| - | ---- | --------- |
-| 8.1 | Schema `phase8_groups` + FK activation for `groupId` columns | Migration applied |
+| #   | Work                                                                                                        | Done when                                                    |
+| --- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| 8.1 | Schema `phase8_groups` + FK activation for `groupId` columns                                                | Migration applied                                            |
 | 8.2 | `SubjectAccessService` refactor (pets keep passing the standing matrix) + group CRUD API/UI + add/move pets | Group manageable; access matrix extended to groups and green |
-| 8.3 | Group sharing: members/invites/visibility (ported flows) | Invite E2E on a group |
-| 8.4 | Boundaries: polygon draw/edit/validate, centroid + area, map tab | Field boundary drawn, saved, area correct (fixture) |
-| 8.5 | Group care events: API wiring + UI + inherited display on member pets | "Watered the field" appears on the field and its plants |
-| 8.6 | Group reminders on Today board | Watering reminder for a patch round-trips |
-| 8.7 | Group weather + alert rules (centroid-based) | Frost alert for a field fixture |
-| 8.8 | Public group pages + `PublicGroupDto` + sitemap; geo sweep re-run (polygons must never leak) | Public tank page live; 7.8 sweep green incl. groups |
+| 8.3 | Group sharing: members/invites/visibility (ported flows)                                                    | Invite E2E on a group                                        |
+| 8.4 | Boundaries: polygon draw/edit/validate, centroid + area, map tab                                            | Field boundary drawn, saved, area correct (fixture)          |
+| 8.5 | Group care events: API wiring + UI + inherited display on member pets                                       | "Watered the field" appears on the field and its plants      |
+| 8.6 | Group reminders on Today board                                                                              | Watering reminder for a patch round-trips                    |
+| 8.7 | Group weather + alert rules (centroid-based)                                                                | Frost alert for a field fixture                              |
+| 8.8 | Public group pages + `PublicGroupDto` + sitemap; geo sweep re-run (polygons must never leak)                | Public tank page live; 7.8 sweep green incl. groups          |
 
 ## Testing Strategy
 

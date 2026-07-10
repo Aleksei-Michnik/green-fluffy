@@ -25,20 +25,20 @@ Phase 0 stands up the entire skeleton: monorepo, empty-but-deployable API and we
 
 Copy from the sister repo (paths relative to its root), renaming `myfinpro` → `green-fluffy` and `@myfinpro/*` → `@green-fluffy/*`:
 
-| Area | Source paths | Notes |
-| ---- | ------------ | ----- |
-| Workspace | `pnpm-workspace.yaml`, `turbo.json`, root `package.json`, `.nvmrc`, `.prettierrc` | Drop bot-related scripts for now (bot is Phase 13) |
-| Configs | `packages/tsconfig/` (base/nestjs/nextjs/node), `packages/eslint-config/` (base/nestjs/nextjs flat configs) | Copy as-is |
-| Shared package | `packages/shared/` | Keep: locales/`isRTL`, pagination + API envelope DTOs, `API_VERSION`. Drop: `CURRENCY_CODES`. Add: `ru`, `uk` to `LOCALES` |
-| API bootstrap | `apps/api/src/main.ts`, `app.module.ts`, `config/*`, `health/*`, `common/throttler/*`, `common/decorators/throttle.decorator.ts`, `prisma/prisma.service.ts`, `prisma.config.ts`, jest configs | Includes helmet, CORS, cookie-parser, trust-proxy (Cloudflare IPs), pino, Swagger, `/api/v1` prefix |
-| Web bootstrap | `apps/web/` skeleton: `[locale]` App Router layout, `src/i18n/*`, `messages/*`, Tailwind 4 setup, vitest + playwright configs | Extend messages to 4 locales |
-| Local stack | `docker-compose.yml` | Replace the Haraka dev container with `mailpit` for local mail catching; add media volume |
-| Dockerfiles | `infrastructure/docker/{api,web}.Dockerfile` | Multi-stage, node 26-alpine (latest-verified), `target: production` |
-| CI | `.github/workflows/ci.yml`, `pr-check.yml` | Add a `gitleaks` job (new) |
-| CD | `.github/workflows/deploy-staging.yml`, `deploy-production.yml`, `test-staging.yml`, `backup-verify.yml`, `infra-maintenance.yml`; `scripts/deploy.sh`, `rollback.sh`, `cleanup-images.sh`, `backup.sh`, `verify-backup.sh`, `check-backup-age.sh`, `restore.sh` | Rename all paths/containers/networks/images |
-| Compose (envs) | `docker-compose.{staging,production}.{infra,app}.yml` | Own MySQL/Redis/Haraka per env (latest verified tags); add media bind mount to app slots |
-| Nginx | `infrastructure/nginx/conf.d/ssl.conf.template`, `cloudflare-ips.conf`, `_default.conf` | Rendered into the **existing shared nginx** — see below |
-| Env templates | `.env.staging.template`, `.env.production.template`, per-app `.env.example` | Placeholder values only |
+| Area           | Source paths                                                                                                                                                                                                                                                     | Notes                                                                                                                      |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Workspace      | `pnpm-workspace.yaml`, `turbo.json`, root `package.json`, `.nvmrc`, `.prettierrc`                                                                                                                                                                                | Drop bot-related scripts for now (bot is Phase 13)                                                                         |
+| Configs        | `packages/tsconfig/` (base/nestjs/nextjs/node), `packages/eslint-config/` (base/nestjs/nextjs flat configs)                                                                                                                                                      | Copy as-is                                                                                                                 |
+| Shared package | `packages/shared/`                                                                                                                                                                                                                                               | Keep: locales/`isRTL`, pagination + API envelope DTOs, `API_VERSION`. Drop: `CURRENCY_CODES`. Add: `ru`, `uk` to `LOCALES` |
+| API bootstrap  | `apps/api/src/main.ts`, `app.module.ts`, `config/*`, `health/*`, `common/throttler/*`, `common/decorators/throttle.decorator.ts`, `prisma/prisma.service.ts`, `prisma.config.ts`, jest configs                                                                   | Includes helmet, CORS, cookie-parser, trust-proxy (Cloudflare IPs), pino, Swagger, `/api/v1` prefix                        |
+| Web bootstrap  | `apps/web/` skeleton: `[locale]` App Router layout, `src/i18n/*`, `messages/*`, Tailwind 4 setup, vitest + playwright configs                                                                                                                                    | Extend messages to 4 locales                                                                                               |
+| Local stack    | `docker-compose.yml`                                                                                                                                                                                                                                             | Replace the Haraka dev container with `mailpit` for local mail catching; add media volume                                  |
+| Dockerfiles    | `infrastructure/docker/{api,web}.Dockerfile`                                                                                                                                                                                                                     | Multi-stage, node 26-alpine (latest-verified), `target: production`                                                        |
+| CI             | `.github/workflows/ci.yml`, `pr-check.yml`                                                                                                                                                                                                                       | Add a `gitleaks` job (new)                                                                                                 |
+| CD             | `.github/workflows/deploy-staging.yml`, `deploy-production.yml`, `test-staging.yml`, `backup-verify.yml`, `infra-maintenance.yml`; `scripts/deploy.sh`, `rollback.sh`, `cleanup-images.sh`, `backup.sh`, `verify-backup.sh`, `check-backup-age.sh`, `restore.sh` | Rename all paths/containers/networks/images                                                                                |
+| Compose (envs) | `docker-compose.{staging,production}.{infra,app}.yml`                                                                                                                                                                                                            | Own MySQL/Redis/Haraka per env (latest verified tags); add media bind mount to app slots                                   |
+| Nginx          | `infrastructure/nginx/conf.d/ssl.conf.template`, `cloudflare-ips.conf`, `_default.conf`                                                                                                                                                                          | Rendered into the **existing shared nginx** — see below                                                                    |
+| Env templates  | `.env.staging.template`, `.env.production.template`, per-app `.env.example`                                                                                                                                                                                      | Placeholder values only                                                                                                    |
 
 ## Target Repository Layout
 
@@ -66,15 +66,15 @@ green-fluffy/
 
 ## Naming Conventions
 
-| Thing | Pattern | Examples |
-| ----- | ------- | -------- |
-| Docker networks | `green-fluffy-<env>-net` | `green-fluffy-staging-net` |
-| Containers | `green-fluffy-<env>-<service>[-<slot>]` | `green-fluffy-staging-api-blue`, `green-fluffy-prod-mysql` |
-| Network aliases | `green-fluffy-<env>-<service>-<slot>` | upstream targets for nginx |
-| GHCR images | `ghcr.io/<owner>/green-fluffy/{api,web}` | tags: `staging`, `staging-<sha>`, `latest`, `<sha>` |
-| Server dirs | `/opt/green-fluffy/<env>` (+ `/opt/green-fluffy/<env>/media`) | state files `.active-slot`, `.deploy-metadata` |
-| Nginx vhost files | `green-fluffy-<env>.conf` in the shared `conf.d/` | |
-| DB names | `green_fluffy_staging`, `green_fluffy_production` | |
+| Thing             | Pattern                                                       | Examples                                                   |
+| ----------------- | ------------------------------------------------------------- | ---------------------------------------------------------- |
+| Docker networks   | `green-fluffy-<env>-net`                                      | `green-fluffy-staging-net`                                 |
+| Containers        | `green-fluffy-<env>-<service>[-<slot>]`                       | `green-fluffy-staging-api-blue`, `green-fluffy-prod-mysql` |
+| Network aliases   | `green-fluffy-<env>-<service>-<slot>`                         | upstream targets for nginx                                 |
+| GHCR images       | `ghcr.io/<owner>/green-fluffy/{api,web}`                      | tags: `staging`, `staging-<sha>`, `latest`, `<sha>`        |
+| Server dirs       | `/opt/green-fluffy/<env>` (+ `/opt/green-fluffy/<env>/media`) | state files `.active-slot`, `.deploy-metadata`             |
+| Nginx vhost files | `green-fluffy-<env>.conf` in the shared `conf.d/`             |                                                            |
+| DB names          | `green_fluffy_staging`, `green_fluffy_production`             |                                                            |
 
 ## Iteration Plan
 

@@ -81,16 +81,16 @@ Media uploaded through the standard pipeline with `inGallery=false` by default (
 
 ## API Endpoints
 
-| Endpoint | Guard | Notes |
-| -------- | ----- | ----- |
-| `POST /api/v1/pets/:id/stories` | CARETAKER+ | `{mediaId, caption?, alsoInGallery?}`; validates media belongs to pet |
-| `GET /api/v1/pets/:id/stories` | visibility-resolved | Active reel, ordered; includes my seen-state |
-| `GET /api/v1/feed/story-rail` | authed | Followed + discovery pets with active stories, unseen-first |
-| `GET /api/v1/public/pets/:id/stories` | anon | Public pets with public photos only |
-| `POST /api/v1/stories/:id/view` | authed | Upsert seen; anonymous views not tracked |
-| `DELETE /api/v1/stories/:id` | author or pet OWNER | |
-| `GET /api/v1/pets/:id/stories/archive` | VIEWER+ | Expired stories grid, cursor by publishedAt |
-| `GET /api/v1/stories/:id/viewers` | pet OWNER/CARETAKER | View list + count |
+| Endpoint                               | Guard               | Notes                                                                 |
+| -------------------------------------- | ------------------- | --------------------------------------------------------------------- |
+| `POST /api/v1/pets/:id/stories`        | CARETAKER+          | `{mediaId, caption?, alsoInGallery?}`; validates media belongs to pet |
+| `GET /api/v1/pets/:id/stories`         | visibility-resolved | Active reel, ordered; includes my seen-state                          |
+| `GET /api/v1/feed/story-rail`          | authed              | Followed + discovery pets with active stories, unseen-first           |
+| `GET /api/v1/public/pets/:id/stories`  | anon                | Public pets with public photos only                                   |
+| `POST /api/v1/stories/:id/view`        | authed              | Upsert seen; anonymous views not tracked                              |
+| `DELETE /api/v1/stories/:id`           | author or pet OWNER |                                                                       |
+| `GET /api/v1/pets/:id/stories/archive` | VIEWER+             | Expired stories grid, cursor by publishedAt                           |
+| `GET /api/v1/stories/:id/viewers`      | pet OWNER/CARETAKER | View list + count                                                     |
 
 ## Frontend Pages and Components
 
@@ -101,14 +101,14 @@ Media uploaded through the standard pipeline with `inGallery=false` by default (
 
 ## Iteration Plan
 
-| # | Work | Done when |
-| - | ---- | --------- |
-| 11.1 | Schema `phase11_stories` + story CRUD API + visibility resolution + ActivityEvent publish/retract | Lifecycle API tests green |
-| 11.2 | Composer (capture, caption, gallery toggle, video duration validation) | E2E: publish story from mobile viewport |
-| 11.3 | Viewer (progress, gestures, keyboard, likes, view tracking) | E2E tap-through; a11y: keyboard operable, reduced-motion respected |
-| 11.4 | Rails: feed story-rail endpoint + component + public pet page rail; unseen ordering | Rail shows unseen-first; anonymous sees public reels |
-| 11.5 | Expiry job + archive grid + viewer archive mode; retraction verified in feed/public | Story vanishes from public surfaces ≤ 5 min after 24 h; appears in archive |
-| 11.6 | Story notifications: optional new-story for followers (default OFF), digest-friendly | Preference-gated delivery E2E |
+| #    | Work                                                                                              | Done when                                                                  |
+| ---- | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| 11.1 | Schema `phase11_stories` + story CRUD API + visibility resolution + ActivityEvent publish/retract | Lifecycle API tests green                                                  |
+| 11.2 | Composer (capture, caption, gallery toggle, video duration validation)                            | E2E: publish story from mobile viewport                                    |
+| 11.3 | Viewer (progress, gestures, keyboard, likes, view tracking)                                       | E2E tap-through; a11y: keyboard operable, reduced-motion respected         |
+| 11.4 | Rails: feed story-rail endpoint + component + public pet page rail; unseen ordering               | Rail shows unseen-first; anonymous sees public reels                       |
+| 11.5 | Expiry job + archive grid + viewer archive mode; retraction verified in feed/public               | Story vanishes from public surfaces ≤ 5 min after 24 h; appears in archive |
+| 11.6 | Story notifications: optional new-story for followers (default OFF), digest-friendly              | Preference-gated delivery E2E                                              |
 
 ## Testing Strategy
 

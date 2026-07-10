@@ -17,7 +17,7 @@
 
 ## Overview
 
-Phase 6 makes the app *useful every day*: quick feeding/watering logging with a personal food catalog, recurring care and health reminders that respect timezones and DST, and the notification pipeline (email + send-only Telegram) that every later phase reuses (weather alerts, warnings, social). This phase also puts Redis/BullMQ into real service for the first time.
+Phase 6 makes the app _useful every day_: quick feeding/watering logging with a personal food catalog, recurring care and health reminders that respect timezones and DST, and the notification pipeline (email + send-only Telegram) that every later phase reuses (weather alerts, warnings, social). This phase also puts Redis/BullMQ into real service for the first time.
 
 **Dependencies**: Phase 4 (roles), Phase 5 (diary integration, vaccination due dates). Phase 7 is independent.
 
@@ -145,7 +145,7 @@ model NotificationPreference {
 ## Scheduling Engine
 
 - **Generation job** (every 15 min, repeatable): for each active reminder, expand RRULE in the reminder's timezone over `[now, now+14d]`, upsert `ReminderOccurrence` rows (unique key makes it idempotent). Reminder edit ⇒ delete future PENDING occurrences and regenerate.
-- **DST rule**: "08:00 daily" means 08:00 *wall clock* in the reminder's timezone on both sides of a DST switch (rrule expansion with `tzid` handles this; tests pin Israel + Ukraine transitions).
+- **DST rule**: "08:00 daily" means 08:00 _wall clock_ in the reminder's timezone on both sides of a DST switch (rrule expansion with `tzid` handles this; tests pin Israel + Ukraine transitions).
 - **Dispatch job** (every minute): occurrences with `status=PENDING and dueAt - leadTime <= now` → enqueue notifications, mark `NOTIFIED`. `NOTIFIED` older than 24 h without action → `MISSED` (visible in history, no spam).
 - **Done action**: sets `DONE`, and for `kind=CARE` creates the linked `CareEvent` (and thus history) in one transaction; for `kind=HEALTH` optionally deep-links to a pre-filled diary composer. **Snooze**: `snoozedTo` (+15 min/1 h/tomorrow presets) re-enters dispatch.
 - Deploy safety: repeatable jobs registered by name+cron on boot (BullMQ dedupes); blue-green slot flip must not double-schedule — job keys deterministic, and a `queue:health` staging test asserts singleton scheduling after two deploys.
@@ -160,17 +160,17 @@ model NotificationPreference {
 
 ## API Endpoints
 
-| Endpoint | Guard | Notes |
-| -------- | ----- | ----- |
-| `POST/GET/PATCH/DELETE /api/v1/food-items` | authed (own catalog) | `?kind=` filter; archive instead of delete when referenced |
-| `POST /api/v1/pets/:id/care-events` | CARETAKER+ | Quick-log; inline `newFoodItem` creation supported |
-| `GET /api/v1/pets/:id/care-events` | VIEWER+ (public → section rule) | Cursor, `type[]`, date range |
-| `PATCH/DELETE /api/v1/care-events/:id` | author or OWNER | Audit-logged |
-| `POST/GET/PATCH/DELETE /api/v1/reminders` | owner of reminder; pet CARETAKER+ can view pet's reminders | RRULE validated server-side (parse + sane frequency ≥ hourly) |
-| `GET /api/v1/reminders/today` | authed | All occurrences due today across pets/groups, in user timezone |
-| `POST /api/v1/occurrences/:id/done` | CARETAKER+ on subject | Optional `{quantity, unit, foodItemId, notes}` for the auto CareEvent |
-| `POST /api/v1/occurrences/:id/snooze` / `POST :id/skip` | CARETAKER+ | Presets or explicit `snoozedTo` |
-| `GET/PUT /api/v1/users/me/notification-preferences` | authed | Channel × category matrix + quiet hours + digest mode |
+| Endpoint                                                | Guard                                                      | Notes                                                                 |
+| ------------------------------------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------- |
+| `POST/GET/PATCH/DELETE /api/v1/food-items`              | authed (own catalog)                                       | `?kind=` filter; archive instead of delete when referenced            |
+| `POST /api/v1/pets/:id/care-events`                     | CARETAKER+                                                 | Quick-log; inline `newFoodItem` creation supported                    |
+| `GET /api/v1/pets/:id/care-events`                      | VIEWER+ (public → section rule)                            | Cursor, `type[]`, date range                                          |
+| `PATCH/DELETE /api/v1/care-events/:id`                  | author or OWNER                                            | Audit-logged                                                          |
+| `POST/GET/PATCH/DELETE /api/v1/reminders`               | owner of reminder; pet CARETAKER+ can view pet's reminders | RRULE validated server-side (parse + sane frequency ≥ hourly)         |
+| `GET /api/v1/reminders/today`                           | authed                                                     | All occurrences due today across pets/groups, in user timezone        |
+| `POST /api/v1/occurrences/:id/done`                     | CARETAKER+ on subject                                      | Optional `{quantity, unit, foodItemId, notes}` for the auto CareEvent |
+| `POST /api/v1/occurrences/:id/snooze` / `POST :id/skip` | CARETAKER+                                                 | Presets or explicit `snoozedTo`                                       |
+| `GET/PUT /api/v1/users/me/notification-preferences`     | authed                                                     | Channel × category matrix + quiet hours + digest mode                 |
 
 ## Frontend Pages and Components
 
@@ -191,18 +191,18 @@ The **Today board** is the retention surface: reminders due, overdue, recently d
 
 ## Iteration Plan
 
-| # | Work | Done when |
-| - | ---- | --------- |
-| 6.1 | Schema `phase6_care` (FoodItem, CareEvent, Reminder, ReminderOccurrence, NotificationPreference) | Migration applied |
-| 6.2 | Care log: API + QuickLogSheet + FoodPicker (+ optional `ProviderPicker` for non-user performers) + history list; **unified log**: the Phase 5 diary timeline renders care events inline with time/quantity/item/performer (every event is attributed to the pet and visible in its diary) | E2E: log feeding in ≤3 taps; entry visible in the pet's diary timeline with its details |
-| 6.3 | Queue infra: BullMQ module, Redis wiring in all envs, dead-letter, `queue:health` endpoint, singleton-after-redeploy staging test | Jobs survive slot flip without duplication |
-| 6.4 | Scheduling engine: RRULE validation, occurrence generator, dispatch/missed transitions; DST + timezone test battery | Occurrence tests green incl. DST transitions (Asia/Jerusalem, Europe/Kyiv) |
-| 6.5 | Reminder API + ReminderForm + TodayBoard + done/snooze/skip flows (done → CareEvent tx) | E2E: create daily reminder → occurrence appears → done → care history entry exists |
-| 6.6 | Email notifications: dispatcher + email channel + localized templates | Staging: reminder email delivered at due time (fixture with near-future occurrence) |
-| 6.7 | Telegram channel: send-only client, opt-in toggle (auto-prompt when Telegram linked), deep links | Staging: Telegram message received |
-| 6.8 | Preferences: matrix UI + enforcement in dispatcher + per-user rate cap | Preference off ⇒ channel silent (test) |
-| 6.9 | Health reminders: "create reminder" action from vaccination registry (`nextDueAt` pre-fill), health templates (annual vaccination, monthly antiparasitic) | Registry → reminder round-trip E2E |
-| 6.10 | Quiet hours + daily digest | Digest arrives at window end with held items (faked clock test) |
+| #    | Work                                                                                                                                                                                                                                                                                      | Done when                                                                               |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| 6.1  | Schema `phase6_care` (FoodItem, CareEvent, Reminder, ReminderOccurrence, NotificationPreference)                                                                                                                                                                                          | Migration applied                                                                       |
+| 6.2  | Care log: API + QuickLogSheet + FoodPicker (+ optional `ProviderPicker` for non-user performers) + history list; **unified log**: the Phase 5 diary timeline renders care events inline with time/quantity/item/performer (every event is attributed to the pet and visible in its diary) | E2E: log feeding in ≤3 taps; entry visible in the pet's diary timeline with its details |
+| 6.3  | Queue infra: BullMQ module, Redis wiring in all envs, dead-letter, `queue:health` endpoint, singleton-after-redeploy staging test                                                                                                                                                         | Jobs survive slot flip without duplication                                              |
+| 6.4  | Scheduling engine: RRULE validation, occurrence generator, dispatch/missed transitions; DST + timezone test battery                                                                                                                                                                       | Occurrence tests green incl. DST transitions (Asia/Jerusalem, Europe/Kyiv)              |
+| 6.5  | Reminder API + ReminderForm + TodayBoard + done/snooze/skip flows (done → CareEvent tx)                                                                                                                                                                                                   | E2E: create daily reminder → occurrence appears → done → care history entry exists      |
+| 6.6  | Email notifications: dispatcher + email channel + localized templates                                                                                                                                                                                                                     | Staging: reminder email delivered at due time (fixture with near-future occurrence)     |
+| 6.7  | Telegram channel: send-only client, opt-in toggle (auto-prompt when Telegram linked), deep links                                                                                                                                                                                          | Staging: Telegram message received                                                      |
+| 6.8  | Preferences: matrix UI + enforcement in dispatcher + per-user rate cap                                                                                                                                                                                                                    | Preference off ⇒ channel silent (test)                                                  |
+| 6.9  | Health reminders: "create reminder" action from vaccination registry (`nextDueAt` pre-fill), health templates (annual vaccination, monthly antiparasitic)                                                                                                                                 | Registry → reminder round-trip E2E                                                      |
+| 6.10 | Quiet hours + daily digest                                                                                                                                                                                                                                                                | Digest arrives at window end with held items (faked clock test)                         |
 
 ## Testing Strategy
 

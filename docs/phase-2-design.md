@@ -137,9 +137,16 @@ Lives in `packages/species-data` — the same package later carries hazard/compa
   "category": "ANIMAL",
   "rank": "species",
   "scientificName": "Felis catus",
-  "commonNames": { "en": ["Cat", "Domestic cat"], "he": ["חתול"], "ru": ["Кошка", "Кот"], "uk": ["Кіт", "Кішка"] },
+  "commonNames": {
+    "en": ["Cat", "Domestic cat"],
+    "he": ["חתול"],
+    "ru": ["Кошка", "Кот"],
+    "uk": ["Кіт", "Кішка"],
+  },
   "attributes": { "keptAs": ["indoor", "outdoor"], "class": "mammal" },
-  "children": [ { "slug": "maine-coon", "rank": "breed", "commonNames": { "en": ["Maine Coon"], "...": [] } } ]
+  "children": [
+    { "slug": "maine-coon", "rank": "breed", "commonNames": { "en": ["Maine Coon"], "...": [] } },
+  ],
 }
 ```
 
@@ -150,16 +157,16 @@ Lives in `packages/species-data` — the same package later carries hazard/compa
 
 ## API Endpoints
 
-| Endpoint | Auth | Notes |
-| -------- | ---- | ----- |
-| `GET /api/v1/species?query=&category=&locale=` | authed | Autocomplete: prefix + FULLTEXT match on locale common names (JSON extraction with fallback to all locales + scientific name); returns tree-aware results (breed rows include parent) |
-| `GET /api/v1/species/:id` | authed | Full record |
-| `POST /api/v1/pets` | authed | Create; validates species/customSpecies XOR presence, owner consistency (see DTO rules) |
-| `GET /api/v1/pets` | authed | Own + created pets; filters: `category`, `status`, cursor pagination |
-| `GET /api/v1/pets/:id` | owner-guard | Full record (guard swapped for `PetAccessGuard` in Phase 4) |
-| `PATCH /api/v1/pets/:id` | owner-guard | Partial update; audit-logged |
-| `POST /api/v1/pets/:id/archive` / `POST :id/unarchive` | owner-guard | With `archiveReason` |
-| `DELETE /api/v1/pets/:id` | owner-guard | Soft delete; audit-logged |
+| Endpoint                                               | Auth        | Notes                                                                                                                                                                                 |
+| ------------------------------------------------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/v1/species?query=&category=&locale=`         | authed      | Autocomplete: prefix + FULLTEXT match on locale common names (JSON extraction with fallback to all locales + scientific name); returns tree-aware results (breed rows include parent) |
+| `GET /api/v1/species/:id`                              | authed      | Full record                                                                                                                                                                           |
+| `POST /api/v1/pets`                                    | authed      | Create; validates species/customSpecies XOR presence, owner consistency (see DTO rules)                                                                                               |
+| `GET /api/v1/pets`                                     | authed      | Own + created pets; filters: `category`, `status`, cursor pagination                                                                                                                  |
+| `GET /api/v1/pets/:id`                                 | owner-guard | Full record (guard swapped for `PetAccessGuard` in Phase 4)                                                                                                                           |
+| `PATCH /api/v1/pets/:id`                               | owner-guard | Partial update; audit-logged                                                                                                                                                          |
+| `POST /api/v1/pets/:id/archive` / `POST :id/unarchive` | owner-guard | With `archiveReason`                                                                                                                                                                  |
+| `DELETE /api/v1/pets/:id`                              | owner-guard | Soft delete; audit-logged                                                                                                                                                             |
 
 DTO validation rules (class-validator): `ownerType=USER` ⇒ `ownerUserId` required (defaults to caller); `MUNICIPALITY` ⇒ `ownerLabel` required; `NONE` ⇒ both null. `speciesId` XOR `customSpecies` (at least one; both allowed — custom refines species). `birthDate` ≤ today; `birthPrecision` required when `birthDate` set.
 
@@ -172,16 +179,16 @@ DTO validation rules (class-validator): `ownerType=USER` ⇒ `ownerUserId` requi
 
 ## Iteration Plan
 
-| # | Work | Done when |
-| - | ---- | --------- |
-| 2.1 | `packages/species-data` package: Zod schema, validator (CI job), initial dataset (~200 entries, 4-locale names), seed loader (`pnpm db:seed` idempotent upsert by slug) + `Species` model/migration `phase2_species` | Seed runs twice with no diff; CI validates dataset |
-| 2.2 | Species API: search endpoint with locale-aware matching + unit/integration tests incl. Hebrew/Cyrillic queries | Autocomplete returns "Кошка" for `ru`, breeds grouped under parents |
-| 2.3 | `Pet` model + migration `phase2_pets` + factory fixtures | Migration applied via normal staging deploy |
-| 2.4 | Pet CRUD API: endpoints, DTO validation matrix, `PetOwnerGuard`, audit logging, cursor pagination; access tests (creator-only at this phase) | API suite green incl. owner-consistency cases |
-| 2.5 | Create/edit UI: 3-step form + `SpeciesPicker`; E2E create-a-cat and create-a-monstera | Pet creatable in each locale; validation errors localized |
-| 2.6 | Dashboard: grid, filters, archive toggle, empty states | Playwright: filters + pagination |
-| 2.7 | Pet page v1 with teaser sections; edit entry point | Renders all field combinations (no species, no owner, plant vs animal) |
-| 2.8 | Aliases editor + archive/unarchive flows (reason dialog, archived badge, excluded from default lists) | Archive round-trip E2E; archived pets excluded from actives everywhere |
+| #   | Work                                                                                                                                                                                                                 | Done when                                                              |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| 2.1 | `packages/species-data` package: Zod schema, validator (CI job), initial dataset (~200 entries, 4-locale names), seed loader (`pnpm db:seed` idempotent upsert by slug) + `Species` model/migration `phase2_species` | Seed runs twice with no diff; CI validates dataset                     |
+| 2.2 | Species API: search endpoint with locale-aware matching + unit/integration tests incl. Hebrew/Cyrillic queries                                                                                                       | Autocomplete returns "Кошка" for `ru`, breeds grouped under parents    |
+| 2.3 | `Pet` model + migration `phase2_pets` + factory fixtures                                                                                                                                                             | Migration applied via normal staging deploy                            |
+| 2.4 | Pet CRUD API: endpoints, DTO validation matrix, `PetOwnerGuard`, audit logging, cursor pagination; access tests (creator-only at this phase)                                                                         | API suite green incl. owner-consistency cases                          |
+| 2.5 | Create/edit UI: 3-step form + `SpeciesPicker`; E2E create-a-cat and create-a-monstera                                                                                                                                | Pet creatable in each locale; validation errors localized              |
+| 2.6 | Dashboard: grid, filters, archive toggle, empty states                                                                                                                                                               | Playwright: filters + pagination                                       |
+| 2.7 | Pet page v1 with teaser sections; edit entry point                                                                                                                                                                   | Renders all field combinations (no species, no owner, plant vs animal) |
+| 2.8 | Aliases editor + archive/unarchive flows (reason dialog, archived badge, excluded from default lists)                                                                                                                | Archive round-trip E2E; archived pets excluded from actives everywhere |
 
 ## Testing Strategy
 

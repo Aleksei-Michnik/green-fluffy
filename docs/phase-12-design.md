@@ -61,17 +61,17 @@ export-<date>/
   reminders.json  warnings.json (incl. dismissals)  audit.json (my audit events)
 ```
 
-Scope rule: **the user's own data only** — pets they own/manage, their authored content on others' pets (comments), memberships listed but *other users' personal data minimized* (display names only). JSON schemas versioned in `packages/shared` so the format is testable and future-import-friendly.
+Scope rule: **the user's own data only** — pets they own/manage, their authored content on others' pets (comments), memberships listed but _other users' personal data minimized_ (display names only). JSON schemas versioned in `packages/shared` so the format is testable and future-import-friendly.
 
 ## API Endpoints
 
-| Endpoint | Notes |
-| -------- | ----- |
-| `POST /api/v1/export` | Enqueue; 409 if one active; audit-logged |
-| `GET /api/v1/export` | My export history + statuses |
-| `GET /api/v1/export/:id/download?token=` | Single-use token, expiring; streams zip; audit-logged |
-| `GET /api/v1/privacy/overview` | Aggregate: public pets/groups (with section flags), members across my pets, pets I'm member of, active sessions (refresh tokens: device/IP/created), recent sensitive audit events (visibility, location, members, exports) |
-| `DELETE /api/v1/sessions/:id` / `DELETE /api/v1/sessions` | Revoke one/all other sessions (extends ported refresh-token service) |
+| Endpoint                                                  | Notes                                                                                                                                                                                                                       |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /api/v1/export`                                     | Enqueue; 409 if one active; audit-logged                                                                                                                                                                                    |
+| `GET /api/v1/export`                                      | My export history + statuses                                                                                                                                                                                                |
+| `GET /api/v1/export/:id/download?token=`                  | Single-use token, expiring; streams zip; audit-logged                                                                                                                                                                       |
+| `GET /api/v1/privacy/overview`                            | Aggregate: public pets/groups (with section flags), members across my pets, pets I'm member of, active sessions (refresh tokens: device/IP/created), recent sensitive audit events (visibility, location, members, exports) |
+| `DELETE /api/v1/sessions/:id` / `DELETE /api/v1/sessions` | Revoke one/all other sessions (extends ported refresh-token service)                                                                                                                                                        |
 
 ## Frontend
 
@@ -81,12 +81,12 @@ Scope rule: **the user's own data only** — pets they own/manage, their authore
 
 ## Iteration Plan
 
-| # | Work | Done when |
-| - | ---- | --------- |
-| 12.1 | Export job: builder (streamed zip, memory-bounded), `ExportJob` model + migration `phase12_export`, download tokens, purge job, notification on ready | Export of a seeded heavy user (500 media) completes < 10 min on staging; memory flat |
-| 12.2 | Export UI + history + download; audit | E2E: request → notified → download once → second download rejected |
-| 12.3 | Privacy dashboard: overview endpoint (read-models) + page + session revocation | Dashboard answers "who sees my data?" against a complex fixture |
-| 12.4 | Retention & cascade verification: deletion-cascade test suite across ALL domains (account deletion fixture with pets/groups/media/social/exports ⇒ zero orphans, quota released, ActivityEvents retracted, comments anonymized as "[deleted user]"); retention policy documented on privacy page ×4 locales | Cascade suite green in CI; policy published |
+| #    | Work                                                                                                                                                                                                                                                                                                        | Done when                                                                            |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| 12.1 | Export job: builder (streamed zip, memory-bounded), `ExportJob` model + migration `phase12_export`, download tokens, purge job, notification on ready                                                                                                                                                       | Export of a seeded heavy user (500 media) completes < 10 min on staging; memory flat |
+| 12.2 | Export UI + history + download; audit                                                                                                                                                                                                                                                                       | E2E: request → notified → download once → second download rejected                   |
+| 12.3 | Privacy dashboard: overview endpoint (read-models) + page + session revocation                                                                                                                                                                                                                              | Dashboard answers "who sees my data?" against a complex fixture                      |
+| 12.4 | Retention & cascade verification: deletion-cascade test suite across ALL domains (account deletion fixture with pets/groups/media/social/exports ⇒ zero orphans, quota released, ActivityEvents retracted, comments anonymized as "[deleted user]"); retention policy documented on privacy page ×4 locales | Cascade suite green in CI; policy published                                          |
 
 ## Testing Strategy
 

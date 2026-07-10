@@ -43,7 +43,7 @@ apps/api/src/
     jobs/warning-refresh.job.ts        # incremental recompute on relevant changes + nightly full pass
 ```
 
-**Compute model**: warnings are recomputed **event-driven** (pet/group/placement/location/membership changes enqueue a per-user refresh job) into a materialized `ComputedWarning` table, plus a nightly full pass (catches dataset updates and seasonal flips). Materialization keeps dashboards instant and lets notifications fire only on *newly appearing* warnings.
+**Compute model**: warnings are recomputed **event-driven** (pet/group/placement/location/membership changes enqueue a per-user refresh job) into a materialized `ComputedWarning` table, plus a nightly full pass (catches dataset updates and seasonal flips). Materialization keeps dashboards instant and lets notifications fire only on _newly appearing_ warnings.
 
 ## Dataset Design
 
@@ -205,12 +205,12 @@ Pairs of PLANT pets sharing a group whose type maps to a rule context (`PATCH/FI
 
 ## API Endpoints
 
-| Endpoint | Guard | Notes |
-| -------- | ----- | ----- |
-| `GET /api/v1/warnings` | authed | Active (unresolved, undismissed) + `?includeDismissed=1`; each with severity, message (locale), scope, rule sources |
-| `POST /api/v1/warnings/:key/dismiss` / `DELETE …/dismiss` | authed | With optional reason; audit-logged |
-| `GET /api/v1/pets/:id/recommendations` | VIEWER+ | Care guidelines + companion suggestions + weather nudges |
-| `GET /api/v1/kb/rules/:id` | authed | Rule detail with sources (the "why" page) |
+| Endpoint                                                  | Guard   | Notes                                                                                                               |
+| --------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/v1/warnings`                                    | authed  | Active (unresolved, undismissed) + `?includeDismissed=1`; each with severity, message (locale), scope, rule sources |
+| `POST /api/v1/warnings/:key/dismiss` / `DELETE …/dismiss` | authed  | With optional reason; audit-logged                                                                                  |
+| `GET /api/v1/pets/:id/recommendations`                    | VIEWER+ | Care guidelines + companion suggestions + weather nudges                                                            |
+| `GET /api/v1/kb/rules/:id`                                | authed  | Rule detail with sources (the "why" page)                                                                           |
 
 ## Frontend Pages and Components
 
@@ -222,17 +222,17 @@ Pairs of PLANT pets sharing a group whose type maps to a rule context (`PATCH/FI
 
 ## Iteration Plan
 
-| # | Work | Done when |
-| - | ---- | --------- |
-| 9.1 | Dataset schemas + validator extensions + initial curated dataset (~120 hazards, ~60 companions, ~50 care sets, 4-locale notes, sources) + `kb-sync` deploy step + KB tables migration `phase9_kb` | CI validates dataset; sync idempotent; row counts match dataset |
-| 9.2 | Hazard engine: scope resolution (group/household/reach), tree-walk matching, macro-expanded targets; `ComputedWarning` materialization + event-driven refresh job | Unit matrix green (see testing); lily+cat household fixture produces critical warning |
-| 9.3 | Companion engine + context mapping | Tomato+cabbage in patch fixture ⇒ bad-companion warning; good pairs ⇒ suggestions |
-| 9.4 | Warnings API + dashboard panel + dismissals + "why" sources view | E2E: add lily to cat household → warning appears → dismiss with reason → hidden but listed under dismissed |
-| 9.5 | Recommendations: service + pet tab + seasonal/placement filtering + weather nudges (graceful without location) | Monstera fixture shows watering advice; dry-week fixture elevates it |
-| 9.6 | Contribution pipeline: `docs/kb-contributing.md` (rule format, source requirements, review checklist), PR template, CI dataset-diff summary comment | A sample rule PR passes the documented flow end-to-end |
-| 9.7 | Warning notifications: dispatcher category, new-warning-only firing, resolution handling (warning disappears when condition clears — e.g., pet moved out of group) | Notification on new hazard; none on recompute of existing; resolved warnings close |
+| #   | Work                                                                                                                                                                                                             | Done when                                                                                                    |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| 9.1 | Dataset schemas + validator extensions + initial curated dataset (~120 hazards, ~60 companions, ~50 care sets, 4-locale notes, sources) + `kb-sync` deploy step + KB tables migration `phase9_kb`                | CI validates dataset; sync idempotent; row counts match dataset                                              |
+| 9.2 | Hazard engine: scope resolution (group/household/reach), tree-walk matching, macro-expanded targets; `ComputedWarning` materialization + event-driven refresh job                                                | Unit matrix green (see testing); lily+cat household fixture produces critical warning                        |
+| 9.3 | Companion engine + context mapping                                                                                                                                                                               | Tomato+cabbage in patch fixture ⇒ bad-companion warning; good pairs ⇒ suggestions                            |
+| 9.4 | Warnings API + dashboard panel + dismissals + "why" sources view                                                                                                                                                 | E2E: add lily to cat household → warning appears → dismiss with reason → hidden but listed under dismissed   |
+| 9.5 | Recommendations: service + pet tab + seasonal/placement filtering + weather nudges (graceful without location)                                                                                                   | Monstera fixture shows watering advice; dry-week fixture elevates it                                         |
+| 9.6 | Contribution pipeline: `docs/kb-contributing.md` (rule format, source requirements, review checklist), PR template, CI dataset-diff summary comment                                                              | A sample rule PR passes the documented flow end-to-end                                                       |
+| 9.7 | Warning notifications: dispatcher category, new-warning-only firing, resolution handling (warning disappears when condition clears — e.g., pet moved out of group)                                               | Notification on new hazard; none on recompute of existing; resolved warnings close                           |
 | 9.8 | Procedure recommendations: `ProcedureRule` dataset (castration/spaying for cats, dogs, rodents by sex; core dental/parasite entries) + materialization into Phase 5B RECOMMENDED procedures; age-window handling | Male cat fixture ≥5 months gets castration RECOMMENDED with source link; cancelled stays cancelled on re-run |
-| 9.9 | Care-deviation warnings: cadence bands in care dataset + deviation engine (over/under feeding & watering, weather-adjusted, grace thresholds) + warnings surfaced/notified like hazards | Under-watered monstera fixture warns; rain-covered outdoor bed does not; over-feeding fixture warns |
+| 9.9 | Care-deviation warnings: cadence bands in care dataset + deviation engine (over/under feeding & watering, weather-adjusted, grace thresholds) + warnings surfaced/notified like hazards                          | Under-watered monstera fixture warns; rain-covered outdoor bed does not; over-feeding fixture warns          |
 
 ## Testing Strategy
 
@@ -244,7 +244,7 @@ Pairs of PLANT pets sharing a group whose type maps to a rule context (`PATCH/FI
 
 ## Extendability Notes
 
-- LLM-assisted rule *drafting* (Phase 17) feeds the same PR pipeline — the dataset stays curated and cited; LLM never answers users directly from this system.
+- LLM-assisted rule _drafting_ (Phase 17) feeds the same PR pipeline — the dataset stays curated and cited; LLM never answers users directly from this system.
 - Community rule submissions = the 9.6 pipeline opened to external PRs (public repo advantage).
 - New hazard types (noise, magnetic, temperature-conflict for tank mates) are dataset + engine-case additions, no schema change.
 - Warning materialization gives future "safety score" and onboarding checks ("about to add a lily — you have cats!") a free query surface; the pre-add check is a natural quick win later (`GET /kb/precheck?speciesSlug=&scope=`).

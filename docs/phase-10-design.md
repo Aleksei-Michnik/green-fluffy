@@ -149,19 +149,19 @@ ordering: followed items get a recency boost (interleave A-first within each tim
 
 ## API Endpoints
 
-| Endpoint | Guard | Notes |
-| -------- | ----- | ----- |
-| `POST/DELETE /api/v1/follows` | authed | `{petId}` or `{userId}`; no self/duplicate; blocked-by ⇒ 404 |
-| `GET /api/v1/users/me/follows` | authed | Following list with pet cards |
-| `POST/DELETE /api/v1/likes` | authed | Subject must be public + likes enabled; idempotent |
-| `GET /api/v1/comments?subjectType=&subjectId=` | anon allowed (public subjects) | Threaded ×1, cursor |
-| `POST /api/v1/comments` | authed | Public subject + comments enabled + not blocked; 2000-char cap |
-| `PATCH/DELETE /api/v1/comments/:id` | author (5-min edit window) / subject owner delete / moderator | Status transitions, never hard delete |
-| `GET /api/v1/feed` | authed | Merged feed (above) |
-| `POST /api/v1/reports` | authed | Any public subject/comment/pet |
-| `GET/PATCH /api/v1/moderation/reports` | moderator | Queue, dismiss/action (action = hide content + optional note) |
-| `POST/DELETE /api/v1/blocks` | authed (as content owner) | Blocked users can't comment/like/follow the blocker's content |
-| `PATCH /api/v1/pets/:id/social-settings` | OWNER | Toggles |
+| Endpoint                                       | Guard                                                         | Notes                                                          |
+| ---------------------------------------------- | ------------------------------------------------------------- | -------------------------------------------------------------- |
+| `POST/DELETE /api/v1/follows`                  | authed                                                        | `{petId}` or `{userId}`; no self/duplicate; blocked-by ⇒ 404   |
+| `GET /api/v1/users/me/follows`                 | authed                                                        | Following list with pet cards                                  |
+| `POST/DELETE /api/v1/likes`                    | authed                                                        | Subject must be public + likes enabled; idempotent             |
+| `GET /api/v1/comments?subjectType=&subjectId=` | anon allowed (public subjects)                                | Threaded ×1, cursor                                            |
+| `POST /api/v1/comments`                        | authed                                                        | Public subject + comments enabled + not blocked; 2000-char cap |
+| `PATCH/DELETE /api/v1/comments/:id`            | author (5-min edit window) / subject owner delete / moderator | Status transitions, never hard delete                          |
+| `GET /api/v1/feed`                             | authed                                                        | Merged feed (above)                                            |
+| `POST /api/v1/reports`                         | authed                                                        | Any public subject/comment/pet                                 |
+| `GET/PATCH /api/v1/moderation/reports`         | moderator                                                     | Queue, dismiss/action (action = hide content + optional note)  |
+| `POST/DELETE /api/v1/blocks`                   | authed (as content owner)                                     | Blocked users can't comment/like/follow the blocker's content  |
+| `PATCH /api/v1/pets/:id/social-settings`       | OWNER                                                         | Toggles                                                        |
 
 Social counters appear in `PublicPetDto` (Phase 4 contract anticipated them).
 
@@ -183,17 +183,17 @@ components/social/
 
 ## Iteration Plan
 
-| # | Work | Done when |
-| - | ---- | --------- |
-| 10.1 | Schema `phase10_social` + `ActivityEvent` writers on publish paths (media upload to public pet, entry made public, album created, pet flips public ⇒ backfill events; flips private ⇒ retract) | Publish/retract lifecycle tests green |
+| #    | Work                                                                                                                                                                                                                   | Done when                                                                                     |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| 10.1 | Schema `phase10_social` + `ActivityEvent` writers on publish paths (media upload to public pet, entry made public, album created, pet flips public ⇒ backfill events; flips private ⇒ retract)                         | Publish/retract lifecycle tests green                                                         |
 | 10.2 | Follows: API + buttons + following list; **same-kind suggestions** — "pets like mine" rail (public pets sharing my pets' species/breed, species tree-walk, excluding already-followed/own/blocked) on feed + pet pages | Follow round-trip E2E; Maine Coon owner sees other Maine Coons (falls back to cats) suggested |
-| 10.3 | Likes: API + optimistic button + counters (tx + reconciliation job) | Idempotency + counter accuracy tests |
-| 10.4 | Comments: API + thread UI + edit window + status model | E2E comment thread on a public photo; XSS corpus renders inert |
-| 10.5 | Moderation: owner delete/settings toggles, blocks, report dialog + moderator queue page | Owner controls E2E; report → moderator hides |
-| 10.6 | Feed: query + endpoint + page (tabs all/following) + p95 measurement on staging seed (10k events) | Feed p95 < 300 ms; visibility revalidation test (flip private mid-scroll) |
-| 10.7 | Public pet page social surfaces + anonymous counts + login CTA | Anonymous sees counts, cannot act |
-| 10.8 | Social notifications (comment/follow) via dispatcher, preference-gated (default: comments ON, follows ON, likes OFF) | Notification E2E |
-| 10.9 | Anti-abuse hardening: endpoint throttles, block-semantics sweep across all social endpoints, banned-content re-serve check, `docs/moderation-playbook.md` (SLA, welfare-report escalation) | Abuse checklist signed off; playbook committed |
+| 10.3 | Likes: API + optimistic button + counters (tx + reconciliation job)                                                                                                                                                    | Idempotency + counter accuracy tests                                                          |
+| 10.4 | Comments: API + thread UI + edit window + status model                                                                                                                                                                 | E2E comment thread on a public photo; XSS corpus renders inert                                |
+| 10.5 | Moderation: owner delete/settings toggles, blocks, report dialog + moderator queue page                                                                                                                                | Owner controls E2E; report → moderator hides                                                  |
+| 10.6 | Feed: query + endpoint + page (tabs all/following) + p95 measurement on staging seed (10k events)                                                                                                                      | Feed p95 < 300 ms; visibility revalidation test (flip private mid-scroll)                     |
+| 10.7 | Public pet page social surfaces + anonymous counts + login CTA                                                                                                                                                         | Anonymous sees counts, cannot act                                                             |
+| 10.8 | Social notifications (comment/follow) via dispatcher, preference-gated (default: comments ON, follows ON, likes OFF)                                                                                                   | Notification E2E                                                                              |
+| 10.9 | Anti-abuse hardening: endpoint throttles, block-semantics sweep across all social endpoints, banned-content re-serve check, `docs/moderation-playbook.md` (SLA, welfare-report escalation)                             | Abuse checklist signed off; playbook committed                                                |
 
 ## Testing Strategy
 
