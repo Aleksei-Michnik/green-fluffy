@@ -69,7 +69,10 @@ docker compose up -d
 ```
 
 Set `MDOCK_PUBLIC_API_URL` in your local `.env` to the production API URL so the browser calls the
-API at the same origin as the page; without it the app keeps using `localhost:8080`.
+API at the same origin as the page, and `MDOCK_DEV_ORIGINS` to the production hostname so Next's
+dev server accepts `/_next` requests (assets and the HMR socket) from that origin. Hot reload is
+unchanged: the dev images run `nest start --watch` and `next dev` over the bind-mounted sources.
+Without those two variables the app keeps using `localhost:8080`.
 
 ### Database commands
 
