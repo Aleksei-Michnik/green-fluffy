@@ -1,0 +1,17 @@
+# Decisions log
+
+Short ADRs. Add a row when a choice is made that later work must respect; link the evidence.
+
+| Date       | Decision                                                                                        | Why / evidence                                        |
+| ---------- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| 2026-07-09 | MySQL 9.7 LTS with `mariadb` driver + `@prisma/adapter-mariadb`; `caching_sha2_password` works  | verified in commit `cf55b0e`; no MariaDB fallback     |
+| 2026-07-09 | Local host ports 3308 / 6381 / 8080 (MySQL / Redis / nginx) so the stack coexists with myfinpro | `docker-compose.yml`, README                          |
+| 2026-07-09 | Mailpit replaces a dev Haraka container locally                                                 | `docs/phase-0-design.md` 0.4                          |
+| 2026-07-09 | Prisma CLI runs through `prisma.config.ts` + `tsx`; `.env` loaded with `process.loadEnvFile`    | Prisma 7 does not auto-load `.env` with a config file |
+| 2026-07-11 | CI actions pinned to full commit SHAs; gitleaks job; least-privilege permissions                | commit `15c3936`                                      |
+| 2026-07-11 | Commits carry the Claude co-author trailer (unlike myfinpro)                                    | git log                                               |
+| 2026-09-24 | Outbound mail via the shared relay + client-side DKIM; no per-project Haraka                    | `wiki/infra-context.md`                               |
+| 2026-09-24 | Production deploys are dispatch-only with an explicit confirm input                             | owner decision recorded in infra `next-session.md`    |
+| 2026-09-24 | Agents/skills/wiki layout: `AGENTS.md` index (+ `CLAUDE.md` symlink), small agents, lazy wiki   | this session                                          |
+| pending    | Adopt myfinpro's `useAsyncOperation` UI-async pattern when porting the auth UI (1.7)?           | decide at 1.7; `ui-designer` + `architect`            |
+| pending    | ESLint guard against hardcoded UI strings (plan 0.3 step 5) — not implemented yet               | add with the first feature UI (2.5) at the latest     |
