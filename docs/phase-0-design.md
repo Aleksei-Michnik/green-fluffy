@@ -137,14 +137,31 @@ See [Shared Nginx Integration](#shared-nginx-integration-07-in-detail). Port `de
 
 1. Port `deploy-production.yml`: `main` branch, `production` GitHub environment (require manual approval initially), `:latest` + SHA tags, stricter env (`LOG_LEVEL=warn`, `SWAGGER_ENABLED=false`, tighter `RATE_LIMIT_MAX`, CORS locked to the prod domain).
 2. Staging-tests gate: verify latest `test-staging.yml` run is green and < 24 h old (ported mechanism), plus 0.10's suites once they exist.
-3. **Done when**: `green-fluffy.michnik.pro` serves the placeholder landing page over HTTPS.
+3. Pre-deploy dump step before `deploy.sh` (the 0.9 model, step 1): dump the production schema inside the mysql container into `/opt/green-fluffy/backups/production/pre-deploy/`, keep the last five. A slot rollback does not roll the database back; a release that migrated the schema is reverted by restoring this dump, then `rollback.sh`.
+4. **Done when**: the production hostname serves the placeholder landing page over HTTPS and the pre-deploy dump exists on the server.
 
-### 0.9 Backups + observability
+### 0.9 Backups (design rewritten 2026-09-25 — not implemented until 0.8 exists)
 
-1. Port backup scripts + `backup-verify.yml`: nightly `mysqldump` per env, restore-verification job, age alerting (> 26 h). **Extend the backup archive to include `/opt/green-fluffy/<env>/media`** (tar with rotation; media will grow — monitor disk in the same job).
-2. Structured pino logs; deploy notifications (ported Telegram-webhook step in deploy workflows).
-3. `infra-maintenance.yml` port (image prune, disk checks).
-4. **Done when**: backup created on schedule, restore dry-run passes, alert fires when backup is stale (test by pausing the job).
+**State of the world (checked 2026-09-25)**: no scheduled backup runs on the shared server for any project; the crontab of the deploy user is empty, and the cron-based design ported from myfinpro (`backup.sh` + `check-backup-age.sh` in a crontab, `backup-verify.yml` restoring into a GitHub-hosted MySQL) was never installed there (infra `docs/13-deploy-runbook.md` §5, `docs/10-operations.md`). The only production backups in the shared model today are mrmichnik's pre-deploy dumps. Nothing in this project may assume a backup exists before this iteration ships, and it cannot ship before 0.8: it reuses the deploy workflow's SSH step, secrets and server layout.
+
+**Rules it follows** (infra `docs/09-secrets-and-rotation.md` §9.1a): no credentials file and no crontab line on the server; secrets are GitHub Actions secrets injected into the SSH session per run; unattended work is a scheduled workflow. The dump needs no secret from the workflow at all — it runs inside the mysql container with the container's own environment.
+
+**The model** (the one the other projects adopt now; mrmichnik's production workflow is the reference for step 1):
+
+1. **Pre-deploy dump** in `deploy-production.yml` (see 0.8 step 3) → `backups/production/pre-deploy/`, five kept.
+2. **`backup.yml`** — `schedule` (daily, off-peak UTC) + `workflow_dispatch` with inputs `environment` (`staging` | `production` | `both`, default `both`) and `drill` (boolean). Each run copies `scripts/backup.sh` to `/opt/green-fluffy/<env>/scripts/` (so the server never holds a stale copy), then runs it over SSH with the same host/user/key secrets as the deploy workflows. It carries no database secret.
+3. **`scripts/backup.sh <env> [--drill]`**, on the server:
+   - **Dump inside the container**: `docker exec green-fluffy-<env>-mysql sh -c 'MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysqldump -uroot --single-transaction --no-tablespaces --routines --triggers --set-gtid-purged=OFF "$MYSQL_DATABASE"' | gzip > …/daily/db-<UTC stamp>.sql.gz.tmp`. Credentials come from the container's environment (compose interpolates them from the injected secrets at deploy time), never from the command line or a file. Verified 2026-09-25 on the local `mysql:9.7` container: `mysqldump 9.7.1` honours `MYSQL_PWD`; without `--set-gtid-purged=OFF` it prints a GTID warning.
+   - **Media**: `tar czf …/daily/media-<stamp>.tar.gz -C /opt/green-fluffy/<env> media` — a daily full archive while media is small; the script logs `du -sh media` and `df -h` of the backup path and fails when free space is below twice the previous archive size. Switch to incremental archives when the baseline says so (record it in the progress log).
+   - **Integrity on every file**: non-empty, `gzip -t`, and for the dump the trailing `-- Dump completed` marker; the `.tmp` is renamed into place only after all three pass, so a listing never contains a broken file.
+   - **Retention 7 daily / 4 weekly**: the run on Sunday hard-links its two files into `weekly/`; prune to the newest 7 in `daily/` and 4 in `weekly/`, after the new files are in place, never before. `pre-deploy/` keeps 5 (step 1). Layout: `/opt/green-fluffy/backups/<env>/{daily,weekly,pre-deploy}/`, owned by the deploy user, created by 0.6.
+   - **Age check = the alert**: the script's first step fails the run when the newest `daily/db-*.sql.gz` or `daily/media-*.tar.gz` is older than 26 h (skipped only on the first ever run of an environment); a red scheduled run is the notification. GitHub sends scheduled-workflow notifications to the user who last modified the cron line in the workflow file, and in a public repository disables scheduled workflows after 60 days without repository activity (GitHub docs, "Events that trigger workflows", checked 2026-09-25) — so the cron line is committed by the owner, and a dispatch of `backup.yml` is part of any month without commits.
+   - **Weekly restore drill on the server** (`--drill`, set by the Sunday schedule and available on dispatch): create scratch schema `green_fluffy_restore_drill` in the same mysql container, `gunzip -c <newest dump> | docker exec -i … mysql`, compare `SELECT COUNT(*) FROM _prisma_migrations` with the live schema, `tar tzf` the newest media archive; drop the scratch schema in a `trap` so it is gone even when the drill fails. No GitHub-hosted MySQL, no fixture: the drill restores the real dump where it would be restored for real.
+4. **Out of 0.9** (moved from the ported list): structured pino logs already ship (0.2); deploy notifications are the workflow run status (no Telegram webhook, no extra secret); image pruning is the deploy's `cleanup-images.sh` in the shared pattern; disk checks live in `backup.sh`.
+
+**Needs from the infra Phase 5 templates before it can be built**: (a) the SSH step shape and secret names the deploy template uses, so `backup.yml` reuses them unchanged; (b) confirmation that the template's mysql service carries `MYSQL_ROOT_PASSWORD` and `MYSQL_DATABASE` in the container environment (today's compose does; the template must too); (c) the server layout — deploy files under `/opt/green-fluffy/<env>`, a `backups/` root beside them, and who creates it; (d) whether infra ships a shared `backup.yml`/`backup.sh` template — if so it is vendored with the "synced from infra@sha" header instead of this script; (e) an off-site copy: the shared model keeps backups on the same disk as the data, which this design does not fix.
+
+**Done when** (after 0.8): a scheduled run produced a dump and a media archive for each environment and pruned to the retention; a dispatched drill restored the newest dump and the counts matched; the age check demonstrably fails (rename the newest dump, dispatch → red; rename back → green); the deploy user's crontab is still empty and no credentials file exists on the server.
 
 ### 0.10 Staging smoke tests
 
@@ -206,7 +223,7 @@ Names only (values live in GitHub environment secrets; templates committed with 
 - Ported unit tests must pass at each iteration (0.1–0.3).
 - CI is itself under test: verify each job fails correctly (introduce a deliberate lint error / fake secret on a branch).
 - Deploy verification: scripted `curl` loop during slot switch (zero non-2xx), health endpoints post-deploy, myfinpro unaffected (its health endpoints checked in green-fluffy's deploy smoke step during Phase 0 only).
-- Backup restore dry-run against a scratch MySQL container.
+- Backup restore drill on the server into a scratch schema of the real mysql container (0.9), on a weekly schedule.
 
 ## Acceptance Checklist
 
@@ -215,6 +232,6 @@ Names only (values live in GitHub environment secrets; templates committed with 
 - [ ] `stage-green-fluffy.michnik.pro` + `green-fluffy.michnik.pro` live, HTTPS, 4 locales, dark/light
 - [ ] Two consecutive zero-downtime blue-green deploys per environment
 - [ ] Rollback drill executed successfully on staging
-- [ ] Backups: created, restore-verified, age-alerted; media dir included
+- [ ] Backups (0.9): scheduled workflow dumps DB + media, restore drill passes, age check fails the run; no crontab, no credentials file on the server
 - [ ] myfinpro staging + production verified unaffected
 - [ ] No secret values anywhere in the repo (gitleaks green from the first commit)

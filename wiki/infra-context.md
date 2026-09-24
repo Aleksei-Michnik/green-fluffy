@@ -35,7 +35,7 @@ addresses, usernames or hostnames-as-configuration; the private repos hold the t
 - `infra/mdock/hosts.json` already registers `green-fluffy` → upstream `green-fluffy-nginx:80`
   with `hostHeader: localhost`, network `mdock_net`. `mdock-traefik` (Traefik v3.6) is running on
   this workstation; mrmichnik has adopted it.
-- Green-fluffy adoption is PR #1 (`docker-compose.mdock.yml`): the local `nginx` service joins the
+- Green-fluffy adoption is PR #1, merged 2026-09-24 (`docker-compose.mdock.yml`): the local `nginx` service joins the
   external `mdock_net` network — **no labels**. Routing is generated from the infra registry
   (`mdock.sh gen` → file-provider routers on `websecure` only; a router on `web` would outrank the
   proxy's http→https redirect). Published port 8080 stays. The hostname is written only in
@@ -50,7 +50,8 @@ addresses, usernames or hostnames-as-configuration; the private repos hold the t
 3. PTR / inbound mail work is unrelated to green-fluffy (its mail domain is a subdomain; outbound
    goes through the shared relay).
 4. **No scheduled backups run on the shared server for any project** (infra `docs/13-deploy-runbook.md`
-   §5, 2026-09-24). Phase 0.9 builds them; nothing before it may assume they exist.
+   §5, 2026-09-24). Phase 0.9 builds them; nothing before it may assume they exist. The 0.9
+   design (2026-09-25, `docs/phase-0-design.md`) lists what it needs from the Phase 5 templates.
 
 ## What to re-check on every sync
 

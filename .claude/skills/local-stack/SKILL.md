@@ -28,6 +28,9 @@ commands from `apps/api` against the containers.
 ## Troubleshooting
 
 - Unhealthy `api`: `docker compose logs -f api`; usually a failed migration or a missing env var.
+- After `docker compose build` (or when the log shows a start-time `pnpm install`, a missing
+  `PrismaClient` export or a version the registry does not know): `docker compose up -d -V` —
+  anonymous `node_modules`/`dist` volumes outlive a rebuild (`wiki/gotchas.md`).
 - Wrong MySQL image running (stale container) → `stack-versions` drift section.
 - Port clash → the myfinpro or mrmichnik stacks may be up; ports are set in root `.env`.
 - Never `docker compose down -v` without confirming: it wipes the local database.
@@ -39,4 +42,5 @@ hostname to `green-fluffy-nginx:80`. Adoption in this repo = `docker-compose.mdo
 the `nginx` service joins the external `mdock_net` network, no labels — routing is generated from
 the infra registry. Set `MDOCK_PUBLIC_API_URL` and `MDOCK_DEV_ORIGINS` in the local `.env` for
 same-origin API calls and hot reload (`wiki/deployment.md`). Hostnames are written only in the
-infra registry, never in this repo.
+infra registry, never in this repo. Verified end to end on 2026-09-25 (`wiki/deployment.md`); probe
+websockets through the proxy with `curl --http1.1`.

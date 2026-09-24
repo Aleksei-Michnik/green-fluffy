@@ -35,6 +35,26 @@ jsdom Web Storage shim for Node 26. Not done: branch protection settings (owner 
 
 90 api unit tests, 74 web unit tests, shared tests — all green in CI.
 
+## 0.4a — mdock overlay, hot reload behind the shared proxy (2026-09-25)
+
+PR #1 (`feat/mdock`: `97df06f`, `51e4ce9`) merged into `main` as `0ac5704` on 2026-09-24, CI run
+36063042480 green. `docker-compose.mdock.yml` puts nginx on the proxy network; `next.config.ts`
+reads `allowedDevOrigins` from `MDOCK_DEV_ORIGINS`; `NEXT_PUBLIC_API_URL` from
+`MDOCK_PUBLIC_API_URL`; both only in the local `.env`. Verified 2026-09-25 through the proxy:
+page 200, `/_next/static` chunk with the page's `Origin` 200 with the variable set and 403 with
+it unset, HMR upgrade 101, an edit served on the next request, `/api/v1/health` 200 at the same
+origin, headless Chrome load with every chunk 200 — table in `wiki/deployment.md`. Stack repair
+on the way: rebuilt dev images and renewed anonymous volumes (`wiki/gotchas.md`). Also added
+`.claude/settings.json` allowing agents to dispatch and watch workflows.
+
+## 0.9 — design rewritten (2026-09-25), not implemented
+
+Backups follow the shared model instead of the ported cron design: pre-deploy dump in the
+production workflow, scheduled `backup.yml` + `scripts/backup.sh` dumping inside the mysql
+container with its own environment, 7 daily / 4 weekly, integrity check per file, weekly restore
+drill on the server, age check that fails the run as the alert; no crontab, no credentials file.
+`docs/phase-0-design.md` 0.9 lists what it needs from the infra Phase 5 templates. BLOCKED on 0.8.
+
 ## 0.6–0.10 — deferred
 
 BLOCKED: server provisioning, staging/production CD, backups and staging suites wait for the

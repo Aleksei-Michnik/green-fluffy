@@ -26,3 +26,13 @@
 - **Git identity**: this clone's `git config user.email` is the workstation's global (organisation)
   identity, while every commit in the history carries the owner's personal one. Set a repo-local
   `user.email` matching `git log -1 --format=%ae` before the first commit (`commit-hygiene`).
+- **Anonymous volumes survive `docker compose up -d --build`/`--force-recreate`**: the
+  `node_modules` and `dist` volumes keep whatever a start-time `pnpm install` put there (seen
+  2026-09-25: `@prisma/client` 7.9.0 in the volume vs 7.8.0 in the lockfile → "no exported member
+  PrismaClient", `web` crash-looping on a missing registry version). After a rebuild run
+  `docker compose up -d -V` (renew anonymous volumes).
+- **curl to the mdock proxy negotiates HTTP/2**, where `Upgrade: websocket` is not a thing — an
+  HMR handshake probe returns 404. Use `--http1.1` (→ 101). Browsers do this themselves.
+- **`api` health 503 "pool timeout" for a few minutes right after a fresh recreate** (2026-09-25),
+  while a direct driver query from the same container succeeded; cleared by itself, cause not
+  determined. Wait one healthcheck cycle before digging.
