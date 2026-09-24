@@ -35,6 +35,8 @@ commands from `apps/api` against the containers.
 ## Mdock (shared local front door — see `wiki/infra-context.md`)
 
 The shared Traefik (`mdock-traefik`, network `mdock_net`) already routes the project's production
-hostname to `green-fluffy-nginx:80`. Adoption in this repo = the `nginx` service joins the
-external `mdock_net` network (and, if the infra side asks for labels, both `web` and `websecure`
-routers). Hostnames are written only in the infra registry, never in this repo.
+hostname to `green-fluffy-nginx:80`. Adoption in this repo = `docker-compose.mdock.yml` (PR #1):
+the `nginx` service joins the external `mdock_net` network, no labels — routing is generated from
+the infra registry. Set `MDOCK_PUBLIC_API_URL` and `MDOCK_DEV_ORIGINS` in the local `.env` for
+same-origin API calls and hot reload (`wiki/deployment.md`). Hostnames are written only in the
+infra registry, never in this repo.
