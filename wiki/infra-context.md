@@ -49,11 +49,15 @@ addresses, usernames or hostnames-as-configuration; the private repos hold the t
 2. Shared edge neutralization — after WordPress cutover and 7-day soak.
 3. PTR / inbound mail work is unrelated to green-fluffy (its mail domain is a subdomain; outbound
    goes through the shared relay).
+4. **No scheduled backups run on the shared server for any project** (infra `docs/13-deploy-runbook.md`
+   §5, 2026-09-24). Phase 0.9 builds them; nothing before it may assume they exist.
 
 ## What to re-check on every sync
 
+`infra/docs/13-deploy-runbook.md` (cross-project deploy contract: matrix, flow, gaps),
 `infra/docs/notes/next-session.md` (top and §2 table), `infra/docs/notes/phase-2-pipeline.md §1`,
 `infra/mdock/{hosts.json,README.md}`, `infra/edge/`, `infra/templates/` (exists?),
 `infra/mail/README.md`, and `git -C ~/Aleksei-Michnik/infra log --since=<last sync>`;
 `~/mrmichnik/scripts/{deploy,rollback}.sh` and `.github/workflows/deploy-*.yml` as the newest
-reference implementation of the shared pattern.
+reference implementation of the shared pattern (mrmichnik `main` at `4fe525f` on 2026-09-24:
+dispatch-only production, hot reload for themes).
