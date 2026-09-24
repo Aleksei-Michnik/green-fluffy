@@ -57,6 +57,23 @@ Then open:
 
 MySQL is reachable on `localhost:3308`, Redis on `localhost:6381`.
 
+### Production hostname, locally (mdock)
+
+The infra repo's `mdock` toolkit runs one shared reverse proxy on `127.0.0.1:443` and an isolated
+browser whose DNS points this project's production hostname at it. Opt in with the overlay, which
+only joins the proxy's network (the hostname lives in the private infra registry, not here):
+
+```bash
+export COMPOSE_FILE=docker-compose.yml:docker-compose.mdock.yml
+docker compose up -d
+```
+
+Set `MDOCK_PUBLIC_API_URL` in your local `.env` to the production API URL so the browser calls the
+API at the same origin as the page, and `MDOCK_DEV_ORIGINS` to the production hostname so Next's
+dev server accepts `/_next` requests (assets and the HMR socket) from that origin. Hot reload is
+unchanged: the dev images run `nest start --watch` and `next dev` over the bind-mounted sources.
+Without those two variables the app keeps using `localhost:8080`.
+
 ### Database commands
 
 Run inside the api container (`docker compose exec api …`) or on the host from
