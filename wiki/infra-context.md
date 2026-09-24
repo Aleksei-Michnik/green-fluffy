@@ -50,14 +50,17 @@ addresses, usernames or hostnames-as-configuration; the private repos hold the t
 3. PTR / inbound mail work is unrelated to green-fluffy (its mail domain is a subdomain; outbound
    goes through the shared relay).
 4. **No scheduled backups run on the shared server for any project** (infra `docs/13-deploy-runbook.md`
-   §5, 2026-09-24). Phase 0.9 builds them; nothing before it may assume they exist. The 0.9
-   design (2026-09-25, `docs/phase-0-design.md`) lists what it needs from the Phase 5 templates.
+   §5, 2026-09-24). Phase 0.9 adopts them; nothing before it may assume they exist. Owner decision
+   2026-09-25: the tooling is infra's, reusable for every project — `backup/{backup.sh,projects.conf}`
+   - a scheduled `backup.yml` shipping to `/opt/shared/backup/` on every run (the `certs.yml`
+     shape), files under `/var/backups/<project>/<env>`; this repo registers itself there and calls
+     the pre-deploy dump from its production workflow, nothing more (`docs/phase-0-design.md` 0.9).
 
 ## What to re-check on every sync
 
 `infra/docs/13-deploy-runbook.md` (cross-project deploy contract: matrix, flow, gaps),
 `infra/docs/notes/next-session.md` (top and §2 table), `infra/docs/notes/phase-2-pipeline.md §1`,
-`infra/mdock/{hosts.json,README.md}`, `infra/edge/`, `infra/templates/` (exists?),
+`infra/mdock/{hosts.json,README.md}`, `infra/edge/`, `infra/templates/` (exists?), `infra/backup/` (exists?),
 `infra/mail/README.md`, and `git -C ~/Aleksei-Michnik/infra log --since=<last sync>`;
 `~/mrmichnik/scripts/{deploy,rollback}.sh` and `.github/workflows/deploy-*.yml` as the newest
 reference implementation of the shared pattern (mrmichnik `main` at `4fe525f` on 2026-09-24:

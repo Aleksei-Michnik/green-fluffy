@@ -69,6 +69,7 @@ the injected URL and the endpoint, not by a browser request.
 `scripts/rollback.sh <env>` on the server. Databases are not rolled back by a slot rollback: a
 release that migrates the schema needs a dump first (0.8's pre-deploy dump). Scheduled backups do
 not exist yet on the shared server for any project (2026-09-25) — Phase 0.9 must not assume they
-do; its design (scheduled `backup.yml`, dump inside the mysql container, 7 daily / 4 weekly,
-weekly restore drill, age check = alert, no crontab or credentials file) is in
-`docs/phase-0-design.md` and waits for 0.8.
+do; its design (infra-owned tooling at `/opt/shared/backup`, dump inside the mysql container,
+files under `/var/backups/<project>/<env>`, 7 daily / 4 weekly, weekly restore drill, age check =
+alert, no crontab or credentials file, nothing backup-related in this repository beyond the
+pre-deploy call) is in `docs/phase-0-design.md` and waits for 0.8 and the infra tooling.

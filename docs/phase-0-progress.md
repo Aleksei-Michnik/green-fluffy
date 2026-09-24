@@ -49,11 +49,16 @@ on the way: rebuilt dev images and renewed anonymous volumes (`wiki/gotchas.md`)
 
 ## 0.9 — design rewritten (2026-09-25), not implemented
 
-Backups follow the shared model instead of the ported cron design: pre-deploy dump in the
-production workflow, scheduled `backup.yml` + `scripts/backup.sh` dumping inside the mysql
-container with its own environment, 7 daily / 4 weekly, integrity check per file, weekly restore
-drill on the server, age check that fails the run as the alert; no crontab, no credentials file.
-`docs/phase-0-design.md` 0.9 lists what it needs from the infra Phase 5 templates. BLOCKED on 0.8.
+Backups follow the shared model instead of the ported cron design, with the owner's answers of
+2026-09-25 folded in: the tooling is infra's and reusable (`backup.sh` + `projects.conf` +
+scheduled `backup.yml`, shipped to `/opt/shared/backup/` on every run like `certs.yml`); files
+live under `/var/backups/<project>/<env>`, never in the project tree; dump inside the mysql
+container with its own environment; 7 daily / 4 weekly; integrity check per file; weekly restore
+drill on the server; age check that fails the run as the alert; same-disk accepted for now; SSH
+step and secret names as in myfinpro. This repository keeps nothing backup-related beyond the
+pre-deploy call in 0.8's workflow. A reusable workflow from infra was ruled out on verified
+facts (private-repo components are shared with private repos only). BLOCKED on 0.8 and on the
+infra tooling.
 
 ## 0.6–0.10 — deferred
 
