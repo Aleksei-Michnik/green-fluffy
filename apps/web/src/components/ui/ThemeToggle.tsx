@@ -1,7 +1,9 @@
 'use client';
 
+import { Moon, Sun } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
+import { IconButton } from './IconButton';
 
 type Theme = 'light' | 'dark';
 
@@ -35,15 +37,15 @@ export function ThemeToggle() {
     setTheme(next);
   };
 
+  const dark = theme === 'dark';
+
   return (
-    <button
+    <IconButton
+      label={dark ? t('switchToLight') : t('switchToDark')}
       onClick={toggle}
-      type="button"
-      aria-label={theme === 'dark' ? t('switchToLight') : t('switchToDark')}
       data-testid="theme-toggle"
-      className="rounded border border-gray-300 px-2 py-1 text-sm text-gray-600 hover:text-primary-600 transition-colors dark:border-gray-600 dark:text-gray-300 dark:hover:text-primary-400"
     >
-      <span aria-hidden="true">{theme === 'dark' ? '☀️' : '🌙'}</span>
-    </button>
+      {dark ? <Sun /> : <Moon />}
+    </IconButton>
   );
 }

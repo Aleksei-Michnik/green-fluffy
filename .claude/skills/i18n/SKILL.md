@@ -13,6 +13,12 @@ description: How user-facing text works here — next-intl keys in four locale f
 - Components: `useTranslations('namespace')` / `getTranslations` in server components; ICU
   plurals and selects for counts and gender; dates, numbers and units through `useFormatter` /
   the datetime helpers with the user's timezone — never string-built.
+- Kit primitives read the `ui` namespace (`close`, `dismiss`, `loading`, `optional`, `required`,
+  `skipToContent`, `tone.*`); everything else reaches a primitive through translated props. The
+  `/kit` showcase is the one English-only surface (developer tool, not shipped).
+- Tests render through `renderWithIntl` (`src/test/render.tsx`): real message files and a
+  provider whose `onError` throws, so a missing or misspelled key fails the test; pass
+  `{ locale: 'he' }` to assert a translation and RTL wiring.
 - RTL: layout with logical properties (`ms-`, `me-`, `ps-`, `text-start`, `start-0`); icons that
   imply direction flip under `[dir=rtl]`; Latin names and numbers inside Hebrew text stay LTR
   (`<bdi>` or `unicode-bidi: isolate`).

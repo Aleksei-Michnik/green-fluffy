@@ -36,3 +36,23 @@ for (const prop of ['localStorage', 'sessionStorage'] as const) {
     });
   }
 }
+
+// jsdom 29 ships <dialog> without showModal()/show()/close() (checked
+// 2026-09-25). The kit's Dialog relies on them; mirror the open attribute
+// and the `close` event so behaviour can be asserted.
+if (typeof HTMLDialogElement !== 'undefined') {
+  const proto = HTMLDialogElement.prototype;
+  if (typeof proto.showModal !== 'function') {
+    proto.showModal = function showModal(this: HTMLDialogElement) {
+      this.setAttribute('open', '');
+    };
+    proto.show = function show(this: HTMLDialogElement) {
+      this.setAttribute('open', '');
+    };
+    proto.close = function close(this: HTMLDialogElement, returnValue?: string) {
+      if (returnValue !== undefined) this.returnValue = returnValue;
+      this.removeAttribute('open');
+      this.dispatchEvent(new Event('close'));
+    };
+  }
+}

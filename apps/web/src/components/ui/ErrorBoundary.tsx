@@ -1,9 +1,19 @@
 'use client';
 
-import { Component, type ReactNode, type ErrorInfo } from 'react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { Alert } from './Alert';
+import { Button } from './Button';
+
+export interface ErrorBoundaryMessages {
+  title: string;
+  description: string;
+  retry: string;
+}
 
 interface Props {
   children: ReactNode;
+  /** Localised copy for the default fallback — resolved by the (server) layout. */
+  messages: ErrorBoundaryMessages;
   fallback?: ReactNode;
 }
 
@@ -12,6 +22,7 @@ interface State {
   error: Error | null;
 }
 
+/** Catches render errors below it and offers a retry; class component by React's design. */
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
@@ -37,31 +48,32 @@ export class ErrorBoundary extends Component<Props, State> {
         return this.props.fallback;
       }
 
+      const { title, description, retry } = this.props.messages;
+
       return (
-        <div
-          className="flex min-h-[200px] flex-col items-center justify-center gap-4 rounded-lg bg-gray-50 p-8 text-center dark:bg-gray-800"
-          role="alert"
-          data-testid="error-boundary-fallback"
-        >
-          <div className="text-4xl">⚠️</div>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            Something went wrong
-          </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            An unexpected error occurred. Please try again.
-          </p>
-          {process.env.NODE_ENV !== 'production' && this.state.error && (
-            <pre className="mt-2 max-w-full overflow-auto rounded bg-red-50 p-3 text-left text-xs text-red-800 dark:bg-red-900/30 dark:text-red-300">
-              {this.state.error.message}
-            </pre>
-          )}
-          <button
-            onClick={this.handleReset}
-            className="rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
-            data-testid="error-boundary-reset"
+        <div className="mx-auto max-w-lg p-6" data-testid="error-boundary-fallback">
+          <Alert
+            tone="danger"
+            emphasis="strong"
+            title={title}
+            actions={
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={this.handleReset}
+                data-testid="error-boundary-reset"
+              >
+                {retry}
+              </Button>
+            }
           >
-            Try Again
-          </button>
+            <p>{description}</p>
+            {process.env.NODE_ENV !== 'production' && this.state.error && (
+              <pre className="mt-2 max-w-full overflow-auto rounded-control bg-surface p-3 text-xs text-ink">
+                {this.state.error.message}
+              </pre>
+            )}
+          </Alert>
         </div>
       );
     }

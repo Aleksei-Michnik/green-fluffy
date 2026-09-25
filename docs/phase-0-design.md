@@ -103,6 +103,14 @@ green-fluffy/
 5. Add ESLint guard against hardcoded UI strings (rule or lint script) — the ×4-locale discipline starts now.
 6. **Done when**: all four locales render; Vitest smoke + Playwright sample test pass.
 
+### 0.3a UI kit foundation (added 2026-09-25)
+
+1. Semantic, theme-aware design tokens in `globals.css` (warm leaf green + apricot accent, warm neutrals), one focus ring, one pressable utility, ripple hook, named animations, global reduced-motion rule; Rubik self-hosted (Latin, Cyrillic, Hebrew).
+2. Primitives in `components/ui`: Button, LinkButton, IconButton, Spinner, Field + Input/Textarea/Select, Checkbox, Switch, Card, Badge, Chip, Alert, Toast, Dialog (native), Skeleton, EmptyState; ThemeToggle, Header, Footer, ErrorBoundary, landing and 404 restyled; skip link and `main` landmark in the layout.
+3. Strings inside primitives from the `ui` namespace ×4 locales; `renderWithIntl` test helper that fails on a missing key.
+4. Accessibility proof: axe in every unit spec, `jsx-a11y` lint, Playwright scan of the dev-only `/kit` showcase in 4 locales × 2 themes.
+5. **Done when**: lint/typecheck/format/unit green; kit e2e green on chromium; catalogue (`wiki/ui-kit.md`), design system page and `ui-kit` skill written.
+
 ### 0.4 Local dev stack
 
 1. Port `docker-compose.yml`: latest-verified `mysql` (9.7 LTS line), `redis`, `mailpit` (SMTP catcher, web UI), nginx (dev conf), api, web.

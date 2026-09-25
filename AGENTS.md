@@ -33,15 +33,18 @@ deeper file only when its topic is in play. `CLAUDE.md` is a symlink to this fil
 | `docs/phase-N-design.md`                       | per-phase schema, endpoints, UI, iteration plan, tests                     |
 | `docs/progress.md`, `docs/phase-N-progress.md` | ground truth of what is done (`progress-log`)                              |
 | `docs/ui/`                                     | UI specs written by `ui-designer` before a surface is built                |
+| `apps/web/src/components/ui/`, `/kit` route    | the UI kit (catalogue `wiki/ui-kit.md`, tokens `wiki/ui-design-system.md`) |
 | `wiki/`                                        | operational knowledge — index in `wiki/README.md`                          |
 | `.claude/rules/`                               | path-scoped one-liners that point at the right skill                       |
 
-## Status (2026-09-24)
+## Status (2026-09-25)
 
-Phase 0 iterations 0.1–0.5 shipped (scaffold, API and web skeletons, local stack, CI). 0.6–0.10
-(server, staging/production CD, backups, staging tests) wait for the sibling infra work: deploy
-templates, dispatch-only production, shared edge, Mdock adoption — see `wiki/infra-context.md`.
-Feature phases start at 1.1 (port auth). Branch `main` only; no deploy workflow exists yet.
+Phase 0 iterations 0.1–0.5 shipped (scaffold, API and web skeletons, local stack, CI), plus 0.3a:
+the accessible, localised UI kit (semantic tokens, 18 primitives, axe in unit and e2e, `/kit`
+showcase). 0.6–0.10 (server, staging/production CD, backups, staging tests) wait for the sibling
+infra work: deploy templates, dispatch-only production, shared edge, Mdock adoption — see
+`wiki/infra-context.md`. Feature phases start at 1.1 (port auth). Branch `main` only; no deploy
+workflow exists yet.
 
 ## Agents (`.claude/agents/`) — call by role
 
@@ -75,6 +78,7 @@ iteration ends with a `qa-tester` verdict, `progress-log`, and `learn` when some
 | `privacy-guard`      | any endpoint, serializer, public page, media path                             |
 | `i18n`               | any user-facing string, message file, email template                          |
 | `ui-conventions`     | anything under `apps/web/src`                                                 |
+| `ui-kit`             | reusing, extending or adding a primitive; the a11y/l10n contract; `/kit`      |
 | `testing`            | writing or running tests; choosing the suite level                            |
 | `port-from-myfinpro` | copying from the sister repo                                                  |
 | `kb-dataset`         | dataset files and schema                                                      |

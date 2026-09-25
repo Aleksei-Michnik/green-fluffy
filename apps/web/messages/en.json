@@ -5,10 +5,28 @@
   },
   "home": {
     "title": "Care for every living being you love",
-    "welcome": "Animals and plants — at home, in the garden, on the farm, or on the street. Profiles, photo albums, health diaries, care reminders, and safety recommendations."
+    "welcome": "Animals and plants — at home, in the garden, on the farm, or on the street. Profiles, photo albums, health diaries, care reminders, and safety recommendations.",
+    "eyebrow": "Early access",
+    "explore": "See what is coming",
+    "featuresHeading": "One home for everyone you care for",
+    "features": {
+      "animals": {
+        "title": "Animals",
+        "description": "Profiles, health diaries and care reminders for every pet, from the cat on the sofa to the goats in the yard."
+      },
+      "plants": {
+        "title": "Plants",
+        "description": "The same care tools for the monstera on the windowsill and the tomatoes in the garden: watering, feeding, repotting."
+      },
+      "care": {
+        "title": "Care, together",
+        "description": "Share a profile with family, caretakers or the vet. You decide what stays private and what goes public."
+      }
+    }
   },
   "nav": {
-    "home": "Home"
+    "home": "Home",
+    "language": "Language"
   },
   "footer": {
     "copyright": "© {year} Green and Fluffy"
@@ -16,5 +34,29 @@
   "theme": {
     "switchToLight": "Switch to light theme",
     "switchToDark": "Switch to dark theme"
+  },
+  "ui": {
+    "skipToContent": "Skip to content",
+    "close": "Close",
+    "dismiss": "Dismiss",
+    "loading": "Loading…",
+    "optional": "optional",
+    "required": "required",
+    "tone": {
+      "info": "Information",
+      "success": "Success",
+      "caution": "Warning",
+      "danger": "Danger",
+      "error": "Error"
+    }
+  },
+  "errors": {
+    "title": "Something went wrong",
+    "description": "An unexpected error occurred. Please try again.",
+    "retry": "Try again"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "The page you are looking for does not exist or has moved."
   }
 }

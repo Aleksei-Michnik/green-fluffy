@@ -4,82 +4,360 @@
    theme init script (persisted user choice, falling back to system scheme). */
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 
+/* ──────────────────────────────────────────────────────────────────────────
+   1. Static design tokens (identical in both themes)
+   Brand ramps, radii, easing and named animations. Semantic, theme-aware
+   colours live in section 2 — components use those, never a ramp shade,
+   unless a decorative gradient needs a specific step.
+   ────────────────────────────────────────────────────────────────────────── */
 @theme {
-  /* ── Primary color palette (Emerald — green and fluffy) ── */
-  --color-primary-50: #ecfdf5;
-  --color-primary-100: #d1fae5;
-  --color-primary-200: #a7f3d0;
-  --color-primary-300: #6ee7b9;
-  --color-primary-400: #34d399;
-  --color-primary-500: #10b981;
-  --color-primary-600: #059669;
-  --color-primary-700: #047857;
-  --color-primary-800: #065f46;
-  --color-primary-900: #064e3b;
-  --color-primary-950: #022c22;
-
-  /* ── Font family ── */
+  /* Rubik covers Latin, Cyrillic and Hebrew — one face for all four locales. */
   --font-sans:
-    'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+    'Rubik Variable', 'Rubik', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Noto Sans', 'Helvetica Neue', Arial, sans-serif;
+
+  /* Leaf — the warm, bright green of new growth. */
+  --color-primary-50: #f3fbe9;
+  --color-primary-100: #e6f5d6;
+  --color-primary-200: #cdeab0;
+  --color-primary-300: #aadb7f;
+  --color-primary-400: #83c74e;
+  --color-primary-500: #5aa833;
+  --color-primary-600: #3a7c1a;
+  --color-primary-700: #2f6516;
+  --color-primary-800: #2a5c13;
+  --color-primary-900: #224a12;
+  --color-primary-950: #0f2606;
+
+  /* Fluff — warm apricot for the animal side, highlights and joy. */
+  --color-accent-50: #fff7ed;
+  --color-accent-100: #fff0e0;
+  --color-accent-200: #fedcb8;
+  --color-accent-300: #fdc088;
+  --color-accent-400: #fb9e4f;
+  --color-accent-500: #f47a1e;
+  --color-accent-600: #e46a10;
+  --color-accent-700: #bd5410;
+  --color-accent-800: #a8460a;
+  --color-accent-900: #7f3608;
+  --color-accent-950: #451b04;
+
+  /* Shapes: controls are soft, cards are softer, chips are pills (rounded-full). */
+  --radius-control: 0.875rem;
+  --radius-card: 1.25rem;
+
+  /* Motion: settle softly, never bounce hard. */
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+
+  --animate-rise: rise 0.35s var(--ease-soft) both;
+  --animate-fade: fade 0.25s var(--ease-soft) both;
+  --animate-pop: pop 0.3s var(--ease-spring) both;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(0.5rem);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes pop {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   2. Semantic tokens — the only colours components may use.
+   `@theme inline` turns each into a utility (bg-canvas, text-ink-muted,
+   border-line-strong, outline-focus, shadow-soft …) whose value is resolved
+   where it is used, so the same class flips with <html data-theme>.
+   Contrast verified 2026-09-25 (wiki/ui-design-system.md, "Contrast").
+   ────────────────────────────────────────────────────────────────────────── */
+@theme inline {
+  --color-canvas: var(--gf-canvas);
+  --color-surface: var(--gf-surface);
+  --color-surface-raised: var(--gf-surface-raised);
+  --color-surface-sunken: var(--gf-surface-sunken);
+  --color-ink: var(--gf-ink);
+  --color-ink-muted: var(--gf-ink-muted);
+  --color-ink-subtle: var(--gf-ink-subtle);
+  --color-line: var(--gf-line);
+  --color-line-strong: var(--gf-line-strong);
+  --color-focus: var(--gf-focus);
+  --color-scrim: var(--gf-scrim);
+
+  --color-primary: var(--gf-primary);
+  --color-primary-hover: var(--gf-primary-hover);
+  --color-on-primary: var(--gf-on-primary);
+  --color-primary-soft: var(--gf-primary-soft);
+  --color-primary-ink: var(--gf-primary-ink);
+
+  --color-accent: var(--gf-accent);
+  --color-accent-hover: var(--gf-accent-hover);
+  --color-on-accent: var(--gf-on-accent);
+  --color-accent-soft: var(--gf-accent-soft);
+  --color-accent-ink: var(--gf-accent-ink);
+
+  --color-info: var(--gf-info);
+  --color-info-soft: var(--gf-info-soft);
+  --color-info-ink: var(--gf-info-ink);
+  --color-success: var(--gf-success);
+  --color-success-soft: var(--gf-success-soft);
+  --color-success-ink: var(--gf-success-ink);
+  --color-caution: var(--gf-caution);
+  --color-caution-soft: var(--gf-caution-soft);
+  --color-caution-ink: var(--gf-caution-ink);
+  --color-danger: var(--gf-danger);
+  --color-danger-hover: var(--gf-danger-hover);
+  --color-on-danger: var(--gf-on-danger);
+  --color-danger-soft: var(--gf-danger-soft);
+  --color-danger-ink: var(--gf-danger-ink);
+
+  --shadow-soft: var(--gf-shadow-soft);
+  --shadow-lift: var(--gf-shadow-lift);
 }
 
 :root {
-  --foreground-rgb: 15, 23, 42;
-  --background-start-rgb: 255, 255, 255;
-  --background-end-rgb: 245, 245, 245;
   color-scheme: light;
+
+  --gf-canvas: #fcfbf7;
+  --gf-surface: #ffffff;
+  --gf-surface-raised: #ffffff;
+  --gf-surface-sunken: #f4f1e8;
+  --gf-ink: #1e2619;
+  --gf-ink-muted: #59614f;
+  --gf-ink-subtle: #626a58;
+  --gf-line: #e4e0d3;
+  --gf-line-strong: #87826f;
+  --gf-focus: #2a5c13;
+  --gf-scrim: rgb(20 30 15 / 0.5);
+
+  --gf-primary: #3a7c1a;
+  --gf-primary-hover: #2f6516;
+  --gf-on-primary: #ffffff;
+  --gf-primary-soft: #e6f5d6;
+  --gf-primary-ink: #2a5c13;
+
+  --gf-accent: #e46a10;
+  --gf-accent-hover: #bd5410;
+  --gf-on-accent: #2e1300;
+  --gf-accent-soft: #fff0e0;
+  --gf-accent-ink: #a8460a;
+
+  --gf-info: #2470a8;
+  --gf-info-soft: #e7f1fa;
+  --gf-info-ink: #174a70;
+  --gf-success: #3a7c1a;
+  --gf-success-soft: #e6f5d6;
+  --gf-success-ink: #2a5c13;
+  --gf-caution: #b26a00;
+  --gf-caution-soft: #fff3dc;
+  --gf-caution-ink: #6e4000;
+  --gf-danger: #c9382a;
+  --gf-danger-hover: #a92d21;
+  --gf-on-danger: #ffffff;
+  --gf-danger-soft: #fdeae6;
+  --gf-danger-ink: #8d2418;
+
+  --gf-shadow-soft: 0 1px 2px rgb(30 38 25 / 0.06), 0 4px 16px rgb(30 38 25 / 0.07);
+  --gf-shadow-lift: 0 2px 4px rgb(30 38 25 / 0.08), 0 12px 32px rgb(30 38 25 / 0.14);
 }
 
 [data-theme='dark'] {
-  --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 15, 23, 42;
-  --background-end-rgb: 2, 6, 23;
   color-scheme: dark;
+
+  --gf-canvas: #111a0f;
+  --gf-surface: #182317;
+  --gf-surface-raised: #213020;
+  --gf-surface-sunken: #0b120a;
+  --gf-ink: #eef2e6;
+  --gf-ink-muted: #b5bfa9;
+  --gf-ink-subtle: #98a38c;
+  --gf-line: #2c3b2a;
+  --gf-line-strong: #66795f;
+  --gf-focus: #b9ec88;
+  --gf-scrim: rgb(0 0 0 / 0.6);
+
+  --gf-primary: #8fd95a;
+  --gf-primary-hover: #a3e372;
+  --gf-on-primary: #0f2606;
+  --gf-primary-soft: #233d1a;
+  --gf-primary-ink: #c6ef9f;
+
+  --gf-accent: #ffa257;
+  --gf-accent-hover: #ffb476;
+  --gf-on-accent: #2e1300;
+  --gf-accent-soft: #3a2410;
+  --gf-accent-ink: #ffc48f;
+
+  --gf-info: #7cbbf0;
+  --gf-info-soft: #152a3d;
+  --gf-info-ink: #a9d3f7;
+  --gf-success: #8fd95a;
+  --gf-success-soft: #233d1a;
+  --gf-success-ink: #c6ef9f;
+  --gf-caution: #f0b24a;
+  --gf-caution-soft: #3a2a0c;
+  --gf-caution-ink: #f7cf8c;
+  --gf-danger: #ff8a78;
+  --gf-danger-hover: #ffa294;
+  --gf-on-danger: #2b0c07;
+  --gf-danger-soft: #41201b;
+  --gf-danger-ink: #ffb3a6;
+
+  --gf-shadow-soft: 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 20px rgb(0 0 0 / 0.35);
+  --gf-shadow-lift: 0 2px 4px rgb(0 0 0 / 0.5), 0 16px 40px rgb(0 0 0 / 0.5);
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-    to bottom,
-    rgb(var(--background-start-rgb)),
-    rgb(var(--background-end-rgb))
-  );
-  font-family: var(--font-sans);
+/* ──────────────────────────────────────────────────────────────────────────
+   3. Base styles
+   ────────────────────────────────────────────────────────────────────────── */
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--gf-canvas);
+    color: var(--gf-ink);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background-color: var(--gf-primary-soft);
+    color: var(--gf-primary-ink);
+  }
+
+  /* One switch for the whole app: with reduced motion, everything settles at
+     once. Components add nothing on top of this. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+    /* Progress indication is essential motion: keep spinners turning, slowly. */
+    .animate-spin {
+      animation-duration: 1.5s !important;
+      animation-iteration-count: infinite !important;
+    }
+  }
 }
 
-/* ── Toast slide-in animation ── */
-@keyframes slide-in {
-  from {
-    transform: translateX(100%);
+/* ──────────────────────────────────────────────────────────────────────────
+   4. Shared utilities — every interactive element uses these two
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* The one focus indicator: a 3px ring offset by 2px, so it always sits on
+   the canvas/surface with ≥ 3:1 contrast regardless of the control colour. */
+@utility focus-ring {
+  @apply outline-none focus-visible:outline-solid focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-focus;
+}
+
+/* Flat, tactile feedback: colour transitions plus a tiny press when motion is allowed. */
+@utility pressable {
+  @apply relative overflow-hidden transition-[background-color,color,border-color,box-shadow,transform,opacity] duration-200 ease-soft motion-safe:active:scale-[0.98];
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   5. Component styles that need real CSS (keyframes, pseudo-elements)
+   ────────────────────────────────────────────────────────────────────────── */
+@layer components {
+  /* Ripple, spawned by useRipple() at the pointer position. */
+  .ripple-host {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+  .ripple {
+    position: absolute;
+    border-radius: 9999px;
+    background-color: currentColor;
+    opacity: 0.22;
+    transform: translate(-50%, -50%) scale(0);
+    animation: ripple 0.55s var(--ease-soft, ease-out) forwards;
+  }
+  @keyframes ripple {
+    to {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 0;
+    }
+  }
+
+  /* Skeleton shimmer — static under reduced motion (base rule above). */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      var(--gf-surface-sunken) 25%,
+      var(--gf-line) 50%,
+      var(--gf-surface-sunken) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s linear infinite;
+  }
+  @keyframes shimmer {
+    from {
+      background-position: 200% 0;
+    }
+    to {
+      background-position: -200% 0;
+    }
+  }
+
+  /* Native <dialog>: enter/exit with @starting-style; the backdrop dims the page. */
+  .dialog {
     opacity: 0;
+    transform: translateY(0.75rem) scale(0.98);
+    transition:
+      opacity 0.25s var(--ease-soft, ease-out),
+      transform 0.3s var(--ease-soft, ease-out),
+      overlay 0.3s allow-discrete,
+      display 0.3s allow-discrete;
   }
-  to {
-    transform: translateX(0);
+  .dialog[open] {
     opacity: 1;
+    transform: none;
+    @starting-style {
+      opacity: 0;
+      transform: translateY(0.75rem) scale(0.98);
+    }
   }
-}
-
-.animate-slide-in {
-  animation: slide-in 0.3s ease-out;
-}
-
-/* ── RTL support ── */
-[dir='rtl'] {
-  text-align: right;
-}
-
-[dir='rtl'] .animate-slide-in {
-  animation-name: slide-in-rtl;
-}
-
-@keyframes slide-in-rtl {
-  from {
-    transform: translateX(-100%);
+  .dialog::backdrop {
+    background-color: var(--gf-scrim, rgb(20 30 15 / 0.5));
     opacity: 0;
+    transition:
+      opacity 0.25s var(--ease-soft, ease-out),
+      overlay 0.3s allow-discrete,
+      display 0.3s allow-discrete;
   }
-  to {
-    transform: translateX(0);
+  .dialog[open]::backdrop {
     opacity: 1;
+    @starting-style {
+      opacity: 0;
+    }
   }
 }

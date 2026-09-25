@@ -36,3 +36,19 @@
 - **`api` health 503 "pool timeout" for a few minutes right after a fresh recreate** (2026-09-25),
   while a direct driver query from the same container succeeded; cleared by itself, cause not
   determined. Wait one healthcheck cycle before digging.
+- **pnpm 11 applies a default minimum release age** even though `pnpm config get minimumReleaseAge`
+  prints `undefined`: `pnpm add lucide-react` on 2026-09-25 resolved 1.47.0 while 1.48.0 (published
+  ~20 h earlier) was `latest`. Expect a one-day lag behind npm; do not hand-pin the newer one.
+- **jsdom 29 has `HTMLDialogElement` without `showModal()`/`show()`/`close()`** (and no
+  `matchMedia`) — `apps/web/src/test-setup.ts` shims the dialog methods; `useRipple` guards
+  `matchMedia`. React maps `onAnimationEnd` to a prefixed event in jsdom, so the ripple cleanup is
+  a timer (`RIPPLE_DURATION_MS`), not an `animationend` listener.
+- **Tailwind 4 `outline-none` + `focus-visible:outline-3` renders no ring**: `outline-none` sets
+  `--tw-outline-style: none` and `outline-<n>` reuses that variable. The `focus-ring` utility adds
+  `focus-visible:outline-solid` to reset it — verified by compiling `globals.css` (2026-09-25).
+- **`apps/web/.next` on the host is root-owned** (created by an earlier Docker run): a host
+  `next build` cannot write there; build inside the container (`docker compose run --rm --no-deps
+web pnpm run build`) or `sudo rm -rf` the directory first.
+- **tailwind-merge does not know custom radius/shadow/ease/animate names** (`rounded-control` vs
+  `rounded-full` were both kept) — `src/lib/cn.ts` registers them via `extendTailwindMerge`;
+  colour tokens need no registration.

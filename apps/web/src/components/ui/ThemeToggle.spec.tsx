@@ -1,11 +1,8 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { fireEvent, screen } from '@testing-library/react';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { ThemeToggle } from './ThemeToggle';
-
-// Mock next-intl
-vi.mock('next-intl', () => ({
-  useTranslations: () => (key: string) => key,
-}));
+import { expectNoA11yViolations } from '@/test/a11y';
+import { renderWithIntl } from '@/test/render';
 
 describe('ThemeToggle', () => {
   beforeEach(() => {
@@ -13,26 +10,40 @@ describe('ThemeToggle', () => {
     localStorage.clear();
   });
 
-  it('renders the toggle button', () => {
-    render(<ThemeToggle />);
-    expect(screen.getByTestId('theme-toggle')).toBeInTheDocument();
+  it('renders a labelled icon button offering the other theme', () => {
+    document.documentElement.dataset.theme = 'light';
+    renderWithIntl(<ThemeToggle />);
+    expect(screen.getByRole('button', { name: 'Switch to dark theme' })).toBe(
+      screen.getByTestId('theme-toggle'),
+    );
   });
 
-  it('switches to dark theme and persists the choice', () => {
+  it('switches to dark, persists, and relabels', () => {
     document.documentElement.dataset.theme = 'light';
-    render(<ThemeToggle />);
+    renderWithIntl(<ThemeToggle />);
     fireEvent.click(screen.getByTestId('theme-toggle'));
     expect(document.documentElement.dataset.theme).toBe('dark');
     expect(localStorage.getItem('theme')).toBe('dark');
+    expect(screen.getByRole('button', { name: 'Switch to light theme' })).toBeInTheDocument();
   });
 
-  it('switches back to light theme on second click', () => {
+  it('switches back to light on second click', () => {
     document.documentElement.dataset.theme = 'light';
-    render(<ThemeToggle />);
+    renderWithIntl(<ThemeToggle />);
     const button = screen.getByTestId('theme-toggle');
     fireEvent.click(button);
     fireEvent.click(button);
     expect(document.documentElement.dataset.theme).toBe('light');
     expect(localStorage.getItem('theme')).toBe('light');
+  });
+
+  it('is labelled in Hebrew', () => {
+    renderWithIntl(<ThemeToggle />, { locale: 'he' });
+    expect(screen.getByRole('button', { name: 'מעבר לערכת נושא כהה' })).toBeInTheDocument();
+  });
+
+  it('has no axe violations', async () => {
+    const { container } = renderWithIntl(<ThemeToggle />);
+    await expectNoA11yViolations(container);
   });
 });
