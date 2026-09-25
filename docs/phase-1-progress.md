@@ -4,7 +4,7 @@ Design doc: [phase-1-design.md](phase-1-design.md).
 
 ## 1.1 — Auth schema (2026-09-25)
 
-Commit `e2ecb66` on branch `phase/1` (pushed 2026-09-25).
+PR #3 (`phase/1`: `e2ecb66` + docs `1aee117`, CI run 36151855027 and PR gates 36151855016 green) merged into `main` as `e606ce1` on 2026-09-25 with a merge commit (history kept), CI run 36152117733 green.
 
 ### Scope
 
