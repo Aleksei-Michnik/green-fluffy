@@ -4,7 +4,7 @@ Design doc: [phase-1-design.md](phase-1-design.md).
 
 ## 1.1 — Auth schema (2026-09-25)
 
-Commit: _pending_ (working tree at the time of writing; hash recorded on commit).
+Commit `e2ecb66` on branch `phase/1` (pushed 2026-09-25).
 
 ### Scope
 
