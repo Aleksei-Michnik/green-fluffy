@@ -1,113 +1,61 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import type { MockInstance } from 'vitest';
+import { fireEvent, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ErrorBoundary } from './ErrorBoundary';
+import { renderWithIntl } from '@/test/render';
 
-// Component that throws an error
-function ThrowingComponent({ shouldThrow }: { shouldThrow: boolean }) {
-  if (shouldThrow) {
-    throw new Error('Test error message');
-  }
-  return <div data-testid="child">Normal content</div>;
-}
+const messages = {
+  title: 'Something went wrong',
+  description: 'An unexpected error occurred. Please try again.',
+  retry: 'Try again',
+};
 
 describe('ErrorBoundary', () => {
-  let consoleErrorSpy: MockInstance;
-
   beforeEach(() => {
-    // Suppress console.error during error boundary tests
-    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    // React logs the caught error; keep the test output clean.
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
   });
 
   afterEach(() => {
-    consoleErrorSpy.mockRestore();
+    vi.restoreAllMocks();
   });
 
-  it('renders children when no error', () => {
-    render(
-      <ErrorBoundary>
-        <div data-testid="child">Hello</div>
+  it('renders children when nothing throws', () => {
+    renderWithIntl(
+      <ErrorBoundary messages={messages}>
+        <p>Fine</p>
       </ErrorBoundary>,
     );
-    expect(screen.getByTestId('child')).toHaveTextContent('Hello');
+    expect(screen.getByText('Fine')).toBeInTheDocument();
   });
 
-  it('shows fallback UI on error', () => {
-    render(
-      <ErrorBoundary>
-        <ThrowingComponent shouldThrow={true} />
-      </ErrorBoundary>,
-    );
-    expect(screen.getByTestId('error-boundary-fallback')).toBeInTheDocument();
-    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
-    expect(screen.getByText(/An unexpected error occurred/)).toBeInTheDocument();
-  });
-
-  it('shows "Try Again" button in fallback', () => {
-    render(
-      <ErrorBoundary>
-        <ThrowingComponent shouldThrow={true} />
-      </ErrorBoundary>,
-    );
-    expect(screen.getByTestId('error-boundary-reset')).toBeInTheDocument();
-    expect(screen.getByTestId('error-boundary-reset')).toHaveTextContent('Try Again');
-  });
-
-  it('reset button clears error state and re-renders children', () => {
-    // Use a mutable flag so the same component instance can stop throwing
-    let shouldThrowFlag = true;
-    function ConditionalThrower() {
-      if (shouldThrowFlag) {
-        throw new Error('Test error');
-      }
-      return <div data-testid="child">Recovered</div>;
+  it('shows the localised fallback and recovers on retry', () => {
+    let shouldThrow = true;
+    function Flaky() {
+      if (shouldThrow) throw new Error('boom');
+      return <p>Recovered</p>;
     }
-
-    render(
-      <ErrorBoundary>
-        <ConditionalThrower />
+    renderWithIntl(
+      <ErrorBoundary messages={messages}>
+        <Flaky />
       </ErrorBoundary>,
     );
-
-    // Should show error boundary
-    expect(screen.getByTestId('error-boundary-fallback')).toBeInTheDocument();
-
-    // Stop throwing, then click reset
-    shouldThrowFlag = false;
-    fireEvent.click(screen.getByTestId('error-boundary-reset'));
-
-    // Now children should render successfully
-    expect(screen.getByTestId('child')).toHaveTextContent('Recovered');
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent('Something went wrong');
+    expect(alert).toHaveTextContent('boom');
+    shouldThrow = false;
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(screen.getByText('Recovered')).toBeInTheDocument();
   });
 
-  it('renders custom fallback when provided', () => {
-    const customFallback = <div data-testid="custom-fallback">Custom error UI</div>;
-
-    render(
-      <ErrorBoundary fallback={customFallback}>
-        <ThrowingComponent shouldThrow={true} />
+  it('renders a custom fallback', () => {
+    function Boom(): never {
+      throw new Error('boom');
+    }
+    renderWithIntl(
+      <ErrorBoundary messages={messages} fallback={<p>Custom</p>}>
+        <Boom />
       </ErrorBoundary>,
     );
-    expect(screen.getByTestId('custom-fallback')).toBeInTheDocument();
-    expect(screen.getByText('Custom error UI')).toBeInTheDocument();
-    expect(screen.queryByTestId('error-boundary-fallback')).not.toBeInTheDocument();
-  });
-
-  it('logs error to console', () => {
-    render(
-      <ErrorBoundary>
-        <ThrowingComponent shouldThrow={true} />
-      </ErrorBoundary>,
-    );
-    expect(consoleErrorSpy).toHaveBeenCalled();
-  });
-
-  it('fallback has role="alert" for accessibility', () => {
-    render(
-      <ErrorBoundary>
-        <ThrowingComponent shouldThrow={true} />
-      </ErrorBoundary>,
-    );
-    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByText('Custom')).toBeInTheDocument();
   });
 });

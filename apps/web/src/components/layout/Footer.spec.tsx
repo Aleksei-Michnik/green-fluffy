@@ -1,21 +1,24 @@
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi } from 'vitest';
+import { screen } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
 import { Footer } from './Footer';
-
-// Mock next-intl
-vi.mock('next-intl', () => ({
-  useTranslations: () => (key: string, _params?: Record<string, unknown>) => key,
-}));
+import { expectNoA11yViolations } from '@/test/a11y';
+import { renderWithIntl } from '@/test/render';
 
 describe('Footer', () => {
-  it('renders the footer element', () => {
-    render(<Footer />);
-    const footer = screen.getByRole('contentinfo');
-    expect(footer).toBeInTheDocument();
+  it('shows the copyright with the current year', () => {
+    renderWithIntl(<Footer />);
+    expect(screen.getByRole('contentinfo')).toHaveTextContent(
+      `© ${new Date().getFullYear()} Green and Fluffy`,
+    );
   });
 
-  it('renders copyright text', () => {
-    render(<Footer />);
-    expect(screen.getByText('copyright')).toBeInTheDocument();
+  it('is localised', () => {
+    renderWithIntl(<Footer />, { locale: 'ru' });
+    expect(screen.getByRole('contentinfo')).toHaveTextContent('Зелёные и пушистые');
+  });
+
+  it('has no axe violations', async () => {
+    const { container } = renderWithIntl(<Footer />);
+    await expectNoA11yViolations(container);
   });
 });

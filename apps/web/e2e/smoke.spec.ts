@@ -7,8 +7,11 @@ test.describe('Smoke Tests', () => {
     // Verify the page title
     await expect(page).toHaveTitle(/Green and Fluffy/);
 
-    // Verify main heading is visible
-    await expect(page.getByRole('heading', { name: 'Green and Fluffy' })).toBeVisible();
+    // Verify the brand link and the hero heading are visible
+    await expect(page.getByRole('link', { name: 'Green and Fluffy' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Care for every living being you love' }),
+    ).toBeVisible();
   });
 
   test('health endpoint returns ok', async ({ request }) => {
@@ -31,7 +34,7 @@ test.describe('Smoke Tests', () => {
           { name: 'NEXT_LOCALE', value: locale, domain: 'localhost', path: '/' },
         ]);
         await page.goto('/');
-        await expect(page.getByRole('heading', { name: appName })).toBeVisible();
+        await expect(page.getByRole('link', { name: appName })).toBeVisible();
         if (locale === 'he') {
           await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
         }

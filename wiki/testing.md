@@ -29,6 +29,10 @@ in the jest/vitest configs — add them when the first domain module lands (Phas
 - **Upload security** (3.2): MIME spoof, SVG rejection, oversize, quota edge, EXIF-GPS byte scan.
 - **Geo privacy sweep** (7.8): response-schema walk, SSR/OG/sitemap scan, log redaction.
 - **Deletion cascade** (12.4): account deletion fixture ⇒ zero orphans.
+- **Kit accessibility** (since the UI kit, 2026-09-25): `e2e/kit.spec.ts` runs axe (WCAG 2.2
+  AA + best-practice) over `/kit` in every locale and theme and checks focus ring, modal
+  dialog, toast live region and reduced motion; every primitive's unit spec calls
+  `expectNoA11yViolations`; `jsx-a11y/recommended` lints every `.tsx`.
 
 ## Patterns
 
@@ -39,4 +43,8 @@ in the jest/vitest configs — add them when the first domain module lands (Phas
   calls in CI.
 - Test behaviour through public surfaces (endpoints, rendered components), not internals; never
   weaken a test to pass (no `.skip`, no broadened assertions, no raised timeouts to hide races).
-- jsdom under Node 26 lacks Web Storage — `apps/web/src/test-setup.ts` shims it (`gotchas.md`).
+- jsdom under Node 26 lacks Web Storage and jsdom 29 lacks `<dialog>.showModal()/close()` —
+  `apps/web/src/test-setup.ts` shims both (`gotchas.md`).
+- Web components render with `renderWithIntl` (`src/test/render.tsx`): real message files, a
+  provider that throws on a missing key, `lang`/`dir` set like the layout; keyboard through
+  `@testing-library/user-event`.

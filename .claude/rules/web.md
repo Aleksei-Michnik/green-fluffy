@@ -4,5 +4,8 @@ paths:
 ---
 
 Web code: no hardcoded user-facing strings — next-intl keys present in all four `messages/*.json`
-files; logical CSS properties (RTL); both themes; reuse `components/ui` primitives; a new page or
-component needs a spec in `docs/ui/` (`ui-designer`). Skills: `ui-conventions`, `i18n`, `testing`.
+files (the `/kit` showcase is the documented exception); compose from `components/ui` with the
+semantic tokens, `cn()`, `focus-ring` and `Field` (`ui-kit` skill for a missing primitive or
+variant); logical CSS properties (RTL); both themes; `renderWithIntl` + `expectNoA11yViolations`
+in specs; a new page or component needs a spec in `docs/ui/` (`ui-designer`). Skills:
+`ui-conventions`, `ui-kit`, `i18n`, `testing`.

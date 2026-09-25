@@ -8,7 +8,8 @@ one agent. Read a page only when its topic is in play. Every fact carries the da
 | ---------------------------------------------- | --------------------------------------------------------------------------- |
 | [architecture-map.md](architecture-map.md)     | Orienting in the monorepo, the module map per phase, cross-cutting rules    |
 | [conventions.md](conventions.md)               | Writing any code: naming, layout, DTOs, DRY/no-legacy, formatting           |
-| [ui-design-system.md](ui-design-system.md)     | Designing or building any page or component                                 |
+| [ui-design-system.md](ui-design-system.md)     | Designing or building any page or component: mood, tokens, contrast, rules  |
+| [ui-kit.md](ui-kit.md)                         | Using, extending or adding a primitive; the catalogue, recipes, tests, /kit |
 | [testing.md](testing.md)                       | Writing or running tests, coverage gates, standing suites                   |
 | [myfinpro-reuse-map.md](myfinpro-reuse-map.md) | Porting anything from the sister repo                                       |
 | [infra-context.md](infra-context.md)           | Touching compose, Dockerfiles, CI/CD, nginx, Mdock; anything deploy-shaped  |

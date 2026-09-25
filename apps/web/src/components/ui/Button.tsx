@@ -1,40 +1,151 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+'use client';
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  children: ReactNode;
-  variant?: 'primary' | 'secondary' | 'outline';
-  size?: 'sm' | 'md' | 'lg';
+import type { ComponentProps, ReactNode } from 'react';
+import { Spinner } from './Spinner';
+import { stateLayerClassName } from './styles';
+import { useRipple } from '@/hooks/useRipple';
+import { cn } from '@/lib/cn';
+
+export type ButtonVariant = 'primary' | 'secondary' | 'tonal' | 'outline' | 'ghost' | 'danger';
+export type ButtonSize = 'sm' | 'md' | 'lg';
+
+export interface ButtonStyleOptions {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  fullWidth?: boolean;
+  className?: string;
 }
 
-const variantStyles = {
-  primary: 'bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500',
-  secondary: 'bg-gray-200 text-gray-800 hover:bg-gray-300 focus:ring-gray-400',
-  outline: 'border border-primary-600 text-primary-600 hover:bg-primary-50 focus:ring-primary-500',
+const variantClassNames: Record<ButtonVariant, string> = {
+  primary: 'bg-primary text-on-primary shadow-soft',
+  secondary: 'bg-surface-sunken text-ink',
+  tonal: 'bg-primary-soft text-primary-ink',
+  outline: 'border-2 border-line-strong bg-transparent text-ink hover:border-primary',
+  ghost: 'bg-transparent text-primary-ink',
+  danger: 'bg-danger text-on-danger shadow-soft',
 };
 
-const sizeStyles = {
-  sm: 'px-3 py-1.5 text-sm',
-  md: 'px-4 py-2 text-base',
-  lg: 'px-6 py-3 text-lg',
+/* Heights are touch targets: 36 / 44 / 52px. Icons scale with the size. */
+const sizeClassNames: Record<ButtonSize, string> = {
+  sm: 'h-9 px-4 text-sm [&_svg]:size-4',
+  md: 'h-11 px-5 text-base [&_svg]:size-5',
+  lg: 'h-13 px-6 text-lg [&_svg]:size-6',
 };
+
+/** The button look for any host — used by Button, LinkButton and custom hosts. */
+export function buttonClassName({
+  variant = 'primary',
+  size = 'md',
+  fullWidth = false,
+  className,
+}: ButtonStyleOptions = {}): string {
+  return cn(
+    'pressable focus-ring inline-flex items-center justify-center gap-2 rounded-control font-medium whitespace-nowrap select-none',
+    stateLayerClassName,
+    'disabled:pointer-events-none disabled:opacity-50 aria-disabled:cursor-default',
+    '[&_svg]:shrink-0',
+    variantClassNames[variant],
+    sizeClassNames[size],
+    fullWidth && 'w-full',
+    className,
+  );
+}
+
+export interface ButtonContentProps {
+  children: ReactNode;
+  loading?: boolean;
+  /** Decorative icon before the label (lucide element, no aria-label needed). */
+  leadingIcon?: ReactNode;
+  trailingIcon?: ReactNode;
+}
+
+/** Label plus icon slots; shared by Button and LinkButton. */
+export function ButtonContent({
+  children,
+  loading,
+  leadingIcon,
+  trailingIcon,
+}: ButtonContentProps) {
+  return (
+    <>
+      {loading ? (
+        <Spinner size="sm" />
+      ) : leadingIcon ? (
+        <span aria-hidden="true" className="inline-flex">
+          {leadingIcon}
+        </span>
+      ) : null}
+      <span>{children}</span>
+      {trailingIcon ? (
+        <span aria-hidden="true" className="inline-flex">
+          {trailingIcon}
+        </span>
+      ) : null}
+    </>
+  );
+}
+
+export interface ButtonProps
+  extends
+    ComponentProps<'button'>,
+    Omit<ButtonStyleOptions, 'className'>,
+    Omit<ButtonContentProps, 'children'> {
+  children: ReactNode;
+}
 
 /**
- * Basic reusable button component.
- * Will be extended with more variants and states in later phases.
+ * The primary pressable. `type="button"` by default so a stray button never
+ * submits a form. `loading` keeps the label and focus, shows a spinner, sets
+ * `aria-busy` and swallows clicks — unlike `disabled`, which removes the
+ * control from the tab order.
  */
 export function Button({
   children,
-  variant = 'primary',
-  size = 'md',
-  className = '',
+  variant,
+  size,
+  fullWidth,
+  className,
+  loading = false,
+  leadingIcon,
+  trailingIcon,
+  disabled,
+  type = 'button',
+  onClick,
+  onPointerDown,
+  onKeyDown,
   ...props
 }: ButtonProps) {
+  const ripple = useRipple<HTMLButtonElement>();
+  const inert = loading || disabled;
+
   return (
     <button
-      className={`inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
+      type={type}
+      className={buttonClassName({ variant, size, fullWidth, className })}
+      disabled={disabled}
+      aria-disabled={loading || undefined}
+      aria-busy={loading || undefined}
+      onClick={(event) => {
+        if (loading) {
+          event.preventDefault();
+          return;
+        }
+        onClick?.(event);
+      }}
+      onPointerDown={(event) => {
+        onPointerDown?.(event);
+        if (!inert && !event.defaultPrevented) ripple.onPointerDown(event);
+      }}
+      onKeyDown={(event) => {
+        onKeyDown?.(event);
+        if (!inert) ripple.onKeyDown(event);
+      }}
       {...props}
     >
-      {children}
+      {ripple.rippleLayer}
+      <ButtonContent loading={loading} leadingIcon={leadingIcon} trailingIcon={trailingIcon}>
+        {children}
+      </ButtonContent>
     </button>
   );
 }

@@ -1,9 +1,9 @@
-import { render, screen, act } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ToastProvider, ToastContainer, useToast } from './Toast';
+import { act, fireEvent, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ToastContainer, ToastProvider, useToast } from './Toast';
+import { renderWithIntl } from '@/test/render';
 
-// Test helper component to trigger toast actions
-function ToastTrigger() {
+function Trigger() {
   const { addToast, removeToast, toasts } = useToast();
   return (
     <div>
@@ -12,20 +12,24 @@ function ToastTrigger() {
       <button onClick={() => addToast('warning', 'Warning message')}>Add Warning</button>
       <button onClick={() => addToast('info', 'Info message')}>Add Info</button>
       <button onClick={() => addToast('success', 'Quick toast', 100)}>Add Quick</button>
+      <button onClick={() => addToast('info', 'Sticky toast', 0)}>Add Sticky</button>
       {toasts.length > 0 && <button onClick={() => removeToast(toasts[0].id)}>Remove First</button>}
       <span data-testid="toast-count">{toasts.length}</span>
     </div>
   );
 }
 
-function renderWithProvider() {
-  return render(
+function renderToasts(locale: 'en' | 'he' = 'en') {
+  return renderWithIntl(
     <ToastProvider>
-      <ToastTrigger />
+      <Trigger />
       <ToastContainer />
     </ToastProvider>,
+    { locale },
   );
 }
+
+const click = (name: string) => act(() => screen.getByText(name).click());
 
 describe('Toast', () => {
   beforeEach(() => {
@@ -36,126 +40,87 @@ describe('Toast', () => {
     vi.useRealTimers();
   });
 
-  it('renders children without toasts initially', () => {
-    renderWithProvider();
+  it('starts empty with the container mounted', () => {
+    renderToasts();
     expect(screen.getByTestId('toast-count')).toHaveTextContent('0');
-    expect(screen.queryByTestId('toast-container')).not.toBeInTheDocument();
+    expect(screen.getByTestId('toast-container')).toBeEmptyDOMElement();
   });
 
-  it('adds a success toast with correct styling', () => {
-    renderWithProvider();
-    act(() => {
-      screen.getByText('Add Success').click();
-    });
-    expect(screen.getByTestId('toast-success')).toBeInTheDocument();
-    expect(screen.getByText('Success message')).toBeInTheDocument();
+  it.each([
+    ['Add Success', 'toast-success', 'status', 'Success: Success message'],
+    ['Add Warning', 'toast-warning', 'status', 'Warning: Warning message'],
+    ['Add Info', 'toast-info', 'status', 'Information: Info message'],
+    ['Add Error', 'toast-error', 'alert', 'Error: Error message'],
+  ])('%s renders with the right role and prefix', (trigger, testId, role, text) => {
+    renderToasts();
+    click(trigger);
+    expect(screen.getByTestId(testId)).toBeInTheDocument();
+    expect(screen.getByRole(role)).toHaveTextContent(text);
+  });
+
+  it('auto-dismisses after its duration', () => {
+    renderToasts();
+    click('Add Quick');
     expect(screen.getByTestId('toast-count')).toHaveTextContent('1');
-  });
-
-  it('adds an error toast', () => {
-    renderWithProvider();
-    act(() => {
-      screen.getByText('Add Error').click();
-    });
-    expect(screen.getByTestId('toast-error')).toBeInTheDocument();
-    expect(screen.getByText('Error message')).toBeInTheDocument();
-  });
-
-  it('adds a warning toast', () => {
-    renderWithProvider();
-    act(() => {
-      screen.getByText('Add Warning').click();
-    });
-    expect(screen.getByTestId('toast-warning')).toBeInTheDocument();
-    expect(screen.getByText('Warning message')).toBeInTheDocument();
-  });
-
-  it('adds an info toast', () => {
-    renderWithProvider();
-    act(() => {
-      screen.getByText('Add Info').click();
-    });
-    expect(screen.getByTestId('toast-info')).toBeInTheDocument();
-    expect(screen.getByText('Info message')).toBeInTheDocument();
-  });
-
-  it('auto-dismisses after duration', () => {
-    renderWithProvider();
-    act(() => {
-      screen.getByText('Add Quick').click();
-    });
-    expect(screen.getByTestId('toast-count')).toHaveTextContent('1');
-
-    // Advance timers past the 100ms duration
     act(() => {
       vi.advanceTimersByTime(200);
     });
-
     expect(screen.getByTestId('toast-count')).toHaveTextContent('0');
   });
 
-  it('manual dismiss via button', () => {
-    renderWithProvider();
+  it('pauses the timer while hovered and resumes afterwards', () => {
+    renderToasts();
+    click('Add Quick');
+    const toast = screen.getByTestId('toast-success');
     act(() => {
-      screen.getByText('Add Success').click();
+      vi.advanceTimersByTime(60);
+    });
+    fireEvent.mouseEnter(toast);
+    act(() => {
+      vi.advanceTimersByTime(500);
     });
     expect(screen.getByTestId('toast-count')).toHaveTextContent('1');
-
+    fireEvent.mouseLeave(toast);
     act(() => {
-      screen.getByTestId('toast-dismiss').click();
+      vi.advanceTimersByTime(30);
+    });
+    expect(screen.getByTestId('toast-count')).toHaveTextContent('1');
+    act(() => {
+      vi.advanceTimersByTime(20);
     });
     expect(screen.getByTestId('toast-count')).toHaveTextContent('0');
   });
 
-  it('multiple toasts stack', () => {
-    renderWithProvider();
+  it('keeps a sticky toast until dismissed', () => {
+    renderToasts();
+    click('Add Sticky');
     act(() => {
-      screen.getByText('Add Success').click();
-      screen.getByText('Add Error').click();
-      screen.getByText('Add Warning').click();
+      vi.advanceTimersByTime(60_000);
     });
-    expect(screen.getByTestId('toast-count')).toHaveTextContent('3');
-    expect(screen.getByTestId('toast-container')).toBeInTheDocument();
+    expect(screen.getByTestId('toast-count')).toHaveTextContent('1');
+    act(() => screen.getByRole('button', { name: 'Dismiss' }).click());
+    expect(screen.getByTestId('toast-count')).toHaveTextContent('0');
   });
 
-  it('limits to max 5 visible toasts', () => {
-    renderWithProvider();
-    act(() => {
-      for (let i = 0; i < 7; i++) {
-        screen.getByText('Add Success').click();
-      }
-    });
+  it('localises the dismiss button', () => {
+    renderToasts('he');
+    click('Add Success');
+    expect(screen.getByRole('button', { name: 'סגירת ההודעה' })).toBeInTheDocument();
+  });
+
+  it('stacks and caps at five', () => {
+    renderToasts();
+    for (let i = 0; i < 7; i++) click('Add Success');
     expect(screen.getByTestId('toast-count')).toHaveTextContent('5');
+    expect(screen.getAllByRole('status')).toHaveLength(5);
   });
 
-  it('removeToast works correctly', () => {
-    renderWithProvider();
-    act(() => {
-      screen.getByText('Add Success').click();
-      screen.getByText('Add Error').click();
-    });
-    expect(screen.getByTestId('toast-count')).toHaveTextContent('2');
-
-    act(() => {
-      screen.getByText('Remove First').click();
-    });
+  it('removes a toast programmatically', () => {
+    renderToasts();
+    click('Add Success');
+    click('Add Error');
+    click('Remove First');
     expect(screen.getByTestId('toast-count')).toHaveTextContent('1');
-  });
-
-  it('toast has role="alert" for accessibility', () => {
-    renderWithProvider();
-    act(() => {
-      screen.getByText('Add Success').click();
-    });
-    expect(screen.getByRole('alert')).toBeInTheDocument();
-  });
-
-  it('dismiss button has accessible label', () => {
-    renderWithProvider();
-    act(() => {
-      screen.getByText('Add Success').click();
-    });
-    expect(screen.getByLabelText('Dismiss')).toBeInTheDocument();
   });
 
   it('throws when useToast is used outside ToastProvider', () => {
@@ -167,8 +132,7 @@ describe('Toast', () => {
         return <div data-testid="error">{(err as Error).message}</div>;
       }
     }
-
-    render(<BadConsumer />);
+    renderWithIntl(<BadConsumer />);
     expect(screen.getByTestId('error')).toHaveTextContent(
       'useToast must be used within a ToastProvider',
     );

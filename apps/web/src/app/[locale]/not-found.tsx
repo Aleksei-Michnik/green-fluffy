@@ -1,18 +1,25 @@
+import { ArrowLeft } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { LinkButton } from '@/components/ui/LinkButton';
 
 export default function NotFoundPage() {
-  const t = useTranslations('common');
+  const t = useTranslations();
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-24">
-      <h1 className="text-6xl font-bold text-gray-300 dark:text-gray-600">404</h1>
-      <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">Page not found</p>
-      <a
-        href="/"
-        className="mt-6 rounded-md bg-primary-600 px-4 py-2 text-white hover:bg-primary-700 transition-colors"
-      >
-        {t('back')}
-      </a>
-    </main>
+    <section className="mx-auto flex w-full max-w-2xl flex-1 flex-col justify-center px-4 py-16 sm:px-6">
+      <p className="mb-4 text-center text-6xl font-semibold text-primary-ink/40" aria-hidden="true">
+        404
+      </p>
+      <EmptyState
+        title={t('notFound.title')}
+        description={t('notFound.description')}
+        action={
+          <LinkButton href="/" leadingIcon={<ArrowLeft className="rtl:-scale-x-100" />}>
+            {t('common.back')}
+          </LinkButton>
+        }
+      />
+    </section>
   );
 }

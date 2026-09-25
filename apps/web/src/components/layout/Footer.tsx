@@ -11,9 +11,9 @@ export function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="border-t border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-        <p className="text-sm text-gray-400 dark:text-gray-500">{t('copyright', { year })}</p>
+    <footer className="border-t border-line bg-surface-sunken">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-6 sm:px-6 lg:px-8">
+        <p className="text-sm text-ink-muted">{t('copyright', { year })}</p>
       </div>
     </footer>
   );

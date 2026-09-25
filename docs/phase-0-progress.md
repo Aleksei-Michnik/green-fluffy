@@ -19,6 +19,41 @@ Commit `3d55fcc`. App Router `[locale]` layout, next-intl for en/he/ru/uk (`loca
 'never'`), RTL for `he`, theme toggle, `ui/{Button,Input,Toast,ErrorBoundary}`, header/footer.
 Not done from the design step list: ESLint guard against hardcoded UI strings.
 
+## 0.3a — UI kit foundation (2026-09-25)
+
+Uncommitted at the time of writing (this session's working tree). Spec: `docs/ui/0.3a-ui-kit.md`;
+design: `docs/phase-0-design.md` 0.3a; catalogue: `wiki/ui-kit.md`; system: `wiki/ui-design-system.md`.
+
+### Web
+
+Semantic, theme-aware tokens in `globals.css` (warm leaf green primary, apricot accent, warm
+neutrals; `@theme inline` utilities such as `bg-surface`, `text-ink-muted`, `outline-focus`),
+one `focus-ring` and one `pressable` utility, `useRipple`, named animations, a global
+reduced-motion rule, Rubik self-hosted (Latin + Cyrillic + Hebrew). Primitives: Button,
+LinkButton, IconButton, Spinner, Field + Input/Textarea/Select, Checkbox, Switch, Card, Badge,
+Chip, Alert, Toast (through Alert), Dialog (native `<dialog>`), Skeleton, EmptyState;
+ThemeToggle, Header, Footer, ErrorBoundary, landing and 404 restyled; skip link and `main`
+landmark in the locale layout. Dev-only `/kit` showcase (404 in production). Strings inside
+primitives read the `ui` namespace, present in all four locale files. `jsx-a11y/recommended`
+added to the shared ESLint config. Dependencies verified on npm the same day: lucide-react,
+clsx, tailwind-merge, @fontsource-variable/rubik, axe-core, @axe-core/playwright,
+@testing-library/user-event, eslint-plugin-jsx-a11y.
+
+### Tests
+
+141 web unit tests green (22 files; every primitive with `expectNoA11yViolations`, keyboard
+via user-event, one non-English assertion each). Playwright `kit.spec.ts` + `smoke.spec.ts`:
+40 passed on chromium and mobile-chrome against the local stack — axe (WCAG 2.2 AA +
+best-practice) clean in 4 locales × 2 themes, focus ring, modal dialog, toasts, reduced motion.
+`pnpm lint && pnpm typecheck && pnpm format:check` green. Production build (`next build` inside
+the web image with `NODE_ENV=production`) green: routes `/_not-found`, `/[locale]`,
+`/[locale]/kit`, `/api/health`.
+
+### Decisions
+
+Semantic tokens only in components; native elements first (`<dialog>`, `<select>`, checkbox);
+showcase English-only; ripple cleanup by timer; see `wiki/decisions.md` (2026-09-25 rows).
+
 ## 0.4 — Local dev stack (2026-07-09)
 
 Commit `cf55b0e`. `docker-compose.yml`: mysql:9.7, redis:8.8-alpine, mailpit v1.30,

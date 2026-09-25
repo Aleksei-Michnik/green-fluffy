@@ -1,34 +1,44 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import {
   createContext,
-  useContext,
-  useState,
   useCallback,
+  useContext,
   useEffect,
   useRef,
+  useState,
   type ReactNode,
 } from 'react';
+import { Alert, type AlertTone } from './Alert';
 
-type ToastType = 'success' | 'error' | 'warning' | 'info';
+export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
-interface Toast {
+export interface Toast {
   id: string;
   type: ToastType;
   message: string;
+  /** Milliseconds before auto-dismiss; 0 keeps the toast until dismissed. */
   duration: number;
 }
 
-interface ToastContextType {
+interface ToastContextValue {
   toasts: Toast[];
   addToast: (type: ToastType, message: string, duration?: number) => void;
   removeToast: (id: string) => void;
 }
 
-const ToastContext = createContext<ToastContextType | undefined>(undefined);
+const ToastContext = createContext<ToastContextValue | undefined>(undefined);
 
 const MAX_TOASTS = 5;
 const DEFAULT_DURATION = 5000;
+
+const toneByType: Record<ToastType, AlertTone> = {
+  success: 'success',
+  error: 'danger',
+  warning: 'caution',
+  info: 'info',
+};
 
 let toastId = 0;
 
@@ -38,17 +48,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const addToast = useCallback(
     (type: ToastType, message: string, duration: number = DEFAULT_DURATION) => {
       const id = `toast-${++toastId}`;
-      setToasts((prev) => {
-        const next = [...prev, { id, type, message, duration }];
-        // Keep max visible toasts
-        return next.slice(-MAX_TOASTS);
-      });
+      setToasts((current) => [...current, { id, type, message, duration }].slice(-MAX_TOASTS));
     },
     [],
   );
 
   const removeToast = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
+    setToasts((current) => current.filter((toast) => toast.id !== id));
   }, []);
 
   return (
@@ -58,7 +64,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useToast() {
+export function useToast(): ToastContextValue {
   const context = useContext(ToastContext);
   if (!context) {
     throw new Error('useToast must be used within a ToastProvider');
@@ -66,67 +72,70 @@ export function useToast() {
   return context;
 }
 
-const typeStyles: Record<ToastType, string> = {
-  success: 'bg-green-50 border-green-400 text-green-800',
-  error: 'bg-red-50 border-red-400 text-red-800',
-  warning: 'bg-yellow-50 border-yellow-400 text-yellow-800',
-  info: 'bg-blue-50 border-blue-400 text-blue-800',
-};
+/**
+ * Auto-dismiss timer that pauses while the pointer or keyboard focus is on
+ * the toast (WCAG 2.2.1), so a message can always be read or acted on.
+ */
+function useDismissTimer(duration: number, onExpire: () => void) {
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const remaining = useRef(duration);
+  const startedAt = useRef(0);
 
-const typeIcons: Record<ToastType, string> = {
-  success: '✓',
-  error: '✕',
-  warning: '⚠',
-  info: 'ℹ',
-};
+  const pause = useCallback(() => {
+    if (!timer.current) return;
+    clearTimeout(timer.current);
+    timer.current = null;
+    remaining.current -= Date.now() - startedAt.current;
+  }, []);
 
-function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string) => void }) {
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resume = useCallback(() => {
+    if (duration <= 0 || timer.current) return;
+    startedAt.current = Date.now();
+    timer.current = setTimeout(onExpire, Math.max(remaining.current, 0));
+  }, [duration, onExpire]);
 
   useEffect(() => {
-    if (toast.duration > 0) {
-      timerRef.current = setTimeout(() => {
-        onDismiss(toast.id);
-      }, toast.duration);
-    }
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-    };
-  }, [toast.id, toast.duration, onDismiss]);
+    resume();
+    return pause;
+  }, [resume, pause]);
+
+  return { pause, resume };
+}
+
+function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string) => void }) {
+  const t = useTranslations('ui');
+  const expire = useCallback(() => onDismiss(toast.id), [onDismiss, toast.id]);
+  const { pause, resume } = useDismissTimer(toast.duration, expire);
 
   return (
     <div
-      role="alert"
-      aria-live="assertive"
-      className={`flex items-start gap-3 rounded-lg border p-4 shadow-lg transition-all duration-300 animate-slide-in ${typeStyles[toast.type]}`}
+      className="pointer-events-auto w-full motion-safe:animate-rise"
       data-testid={`toast-${toast.type}`}
+      onMouseEnter={pause}
+      onMouseLeave={resume}
+      onFocus={pause}
+      onBlur={resume}
     >
-      <span className="text-lg leading-none" aria-hidden="true">
-        {typeIcons[toast.type]}
-      </span>
-      <p className="flex-1 text-sm font-medium">{toast.message}</p>
-      <button
-        onClick={() => onDismiss(toast.id)}
-        className="ml-2 shrink-0 rounded p-1 opacity-70 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-current"
-        aria-label="Dismiss"
-        data-testid="toast-dismiss"
+      <Alert
+        tone={toneByType[toast.type]}
+        // A failed action is an error; the danger tone itself is reserved for hazards.
+        tonePrefix={toast.type === 'error' ? t('tone.error') : undefined}
+        onDismiss={expire}
+        className="shadow-lift"
       >
-        <span aria-hidden="true">✕</span>
-      </button>
+        {toast.message}
+      </Alert>
     </div>
   );
 }
 
+/** Stack at the top end corner; full width on phones. Mount once in the layout. */
 export function ToastContainer() {
   const { toasts, removeToast } = useToast();
 
-  if (toasts.length === 0) return null;
-
   return (
     <div
-      className="fixed top-4 right-4 z-50 flex w-full max-w-sm flex-col gap-2"
+      className="pointer-events-none fixed inset-x-4 top-4 z-50 flex flex-col gap-3 sm:inset-x-auto sm:end-4 sm:w-96"
       data-testid="toast-container"
     >
       {toasts.map((toast) => (

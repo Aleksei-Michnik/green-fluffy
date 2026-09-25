@@ -26,5 +26,10 @@ pnpm test:coverage
   the defect, do not soften the test.
 - Gates: business logic ≥ 80 %, overall ≥ 60 %, PR diff ≥ 70 % (thresholds to be wired into the
   jest/vitest configs with the first domain module).
-- Environment: integration and e2e need Docker; jsdom Web Storage shim lives in
-  `apps/web/src/test-setup.ts`.
+- Accessibility is a suite level: unit `expectNoA11yViolations` (`src/test/a11y.ts`, axe-core
+  in jsdom, contrast off) on every component; `e2e/kit.spec.ts` (axe over `/kit`, 4 locales ×
+  2 themes, keyboard paths) before a kit change is done:
+  `pnpm --filter @green-fluffy/web exec playwright test e2e/kit.spec.ts --project=chromium`.
+  Web components render through `renderWithIntl` (real messages; a missing key throws).
+- Environment: integration and e2e need Docker; jsdom shims (Web Storage, `<dialog>` methods)
+  live in `apps/web/src/test-setup.ts`.
