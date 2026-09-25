@@ -2,15 +2,15 @@
 
 Index only — iteration detail lives in `docs/phase-<N>-progress.md`. Format: `progress-log` skill.
 
-**Last updated**: 2026-09-25 · **Current work**: UI kit foundation (0.3a) built and verified —
-tokens, 18 primitives, axe in unit and e2e, `/kit` showcase, `ui-kit` skill and catalogue;
-next plan row is **1.1** (auth schema) — Phase 0.6–0.10 blocked on the sibling infra work
-(`wiki/infra-context.md`).
+**Last updated**: 2026-09-25 · **Current work**: Phase 1 started — 1.1 auth schema done
+(six account models, `phase1_accounts` migration applied locally, model tests); next plan row
+is **1.2** (email+password auth). Staging apply of the migration and Phase 0.6–0.10 stay
+blocked on the sibling infra work (`wiki/infra-context.md`).
 
 | Phase | Name                                              | Status      | Done        | Detail                                     |
 | ----- | ------------------------------------------------- | ----------- | ----------- | ------------------------------------------ |
 | 0     | Foundation: scaffold, CI/CD, environments         | in progress | 5/10 + 0.3a | [phase-0-progress.md](phase-0-progress.md) |
-| 1     | Accounts: auth, profile, timezone, legal (ported) | not started | 0/10        |                                            |
+| 1     | Accounts: auth, profile, timezone, legal (ported) | in progress | 1/10        | [phase-1-progress.md](phase-1-progress.md) |
 | 2     | Pet profiles & species catalog                    | not started | 0/8         |                                            |
 | 3     | Media foundation                                  | not started | 0/9         |                                            |
 | 4     | Access control, sharing & public pages            | not started | 0/9         |                                            |
@@ -32,3 +32,11 @@ metrics and throttling, Next.js web skeleton with four locales, theme toggle and
 proxy with hot reload), and CI with lint/typecheck/prettier/unit/build/gitleaks. Server
 provisioning and CD are deferred until the shared infra provides its templates; the 0.9 backups
 design is written.
+
+## Phase 1 — summary
+
+The six account models (`User` with the green-fluffy deltas, refresh/verification/reset
+tokens, OAuth providers, audit log) are in the schema with the expand-only `phase1_accounts`
+migration and model-level tests (1.1, 2026-09-25). The auth module, mail, OAuth, Telegram,
+UI, profile, deletion and legal pages (1.2–1.10) follow; the staging apply waits for the CD
+pipeline.

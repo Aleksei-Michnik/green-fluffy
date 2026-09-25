@@ -19,6 +19,10 @@ description: Rules for changing the Prisma schema and creating migrations in thi
   activates them — expand migration, not a rewrite.
 - **Commands** (host, from `apps/api`, or `docker compose exec api`):
   `pnpm db:migrate --name phaseN_topic` → review the SQL → `pnpm db:generate` → run tests.
+  Drift check against the configured database (Prisma 7 flag, `.env` loaded by
+  `prisma.config.ts`): `pnpm exec prisma migrate diff --from-config-datasource --to-schema
+prisma/schema.prisma --exit-code` → "No difference detected". Do not `source` `.env` in a
+  shell (unquoted values with spaces break it); `.prisma` and `.sql` are outside the prettier glob.
   CI uses `prisma generate` with the placeholder URL; integration tests apply migrations to a
   Testcontainers MySQL 9.7.
 - **Seeds** are idempotent upserts by natural key (species by slug); run twice, expect no diff.
