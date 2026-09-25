@@ -21,8 +21,9 @@ Not done from the design step list: ESLint guard against hardcoded UI strings.
 
 ## 0.3a — UI kit foundation (2026-09-25)
 
-Uncommitted at the time of writing (this session's working tree). Spec: `docs/ui/0.3a-ui-kit.md`;
-design: `docs/phase-0-design.md` 0.3a; catalogue: `wiki/ui-kit.md`; system: `wiki/ui-design-system.md`.
+PR #2 (`feat/ui-kit`: `51ea9d1`, CI run 36109903981 green) merged into `main` as `88c4dd1` on
+2026-09-25, CI run 36110121604 green. Spec: `docs/ui/0.3a-ui-kit.md`; design:
+`docs/phase-0-design.md` 0.3a; catalogue: `wiki/ui-kit.md`; system: `wiki/ui-design-system.md`.
 
 ### Web
 
