@@ -4,8 +4,8 @@ Index only — iteration detail lives in `docs/phase-<N>-progress.md`. Format: `
 
 **Last updated**: 2026-09-26 · **Current work**: local stack now at the production hostname by default (0.4b); Phase 1 started — 1.1 auth schema done
 (six account models, `phase1_accounts` migration applied locally, model tests); next plan row
-is **1.2** (email+password auth). Staging apply of the migration and Phase 0.6–0.10 stay
-blocked on the sibling infra work (`wiki/infra-context.md`).
+is **1.2** (email+password auth). 0.6 is provisioned and 0.7–0.10 have exact steps in `docs/phase-0-design.md` (2026-09-26:
+triggers as myfinpro's, ported now, order 0.7 → 0.10 → 0.9 → 0.8); 1.1's staging apply comes with 0.7.
 
 | Phase | Name                                              | Status      | Done        | Detail                                     |
 | ----- | ------------------------------------------------- | ----------- | ----------- | ------------------------------------------ |

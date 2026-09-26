@@ -37,14 +37,15 @@ deeper file only when its topic is in play. `CLAUDE.md` is a symlink to this fil
 | `wiki/`                                        | operational knowledge — index in `wiki/README.md`                          |
 | `.claude/rules/`                               | path-scoped one-liners that point at the right skill                       |
 
-## Status (2026-09-25)
+## Status (2026-09-26)
 
 Phase 0 iterations 0.1–0.5 shipped (scaffold, API and web skeletons, local stack, CI), plus 0.3a:
 the accessible, localised UI kit (semantic tokens, 18 primitives, axe in unit and e2e, `/kit`
-showcase). 0.6–0.10 (server, staging/production CD, backups, staging tests) wait for the sibling
-infra work: deploy templates, dispatch-only production, shared edge, Mdock adoption — see
-`wiki/infra-context.md`. Feature phases start at 1.1 (port auth). Branch `main` only; no deploy
-workflow exists yet.
+showcase). 0.6 is provisioned; 0.7–0.10 (staging CD on push to `develop`, production CD on push to
+`main`, backups, staging tests) have exact steps in `docs/phase-0-design.md` — ported from
+myfinpro and mrmichnik, order 0.7 → 0.10 → 0.9 → 0.8. Phase 1 is under way (1.1 done). Branches
+`main` and `develop` (the integration branch from 0.7); no deploy workflow exists yet. Local runs
+at the production URL through Mdocker (infra `mdock/`).
 
 ## Agents (`.claude/agents/`) — call by role
 

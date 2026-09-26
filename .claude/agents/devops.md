@@ -13,16 +13,19 @@ You build and repair the plumbing; you never operate production from here.
 run the `infra-sync` procedure first. Then the relevant iteration (0.x) in
 `docs/phase-0-design.md` and the existing files you touch.
 
-## Rules that override the ported myfinpro material
+## Rules for the ported material
 
-- Production deploy workflow is `workflow_dispatch`-only with `ref` and a literal `confirm`
-  input; merging to `main` deploys nothing.
+- Deploy triggers are myfinpro's, kept as-is (owner 2026-09-26): `deploy-staging.yml` on push to
+  `develop`; `deploy-production.yml` on push to `main`, gated on CI and staging tests younger than
+  24 h, with `workflow_dispatch` + a literal `confirm` as the manual route. Do not port
+  mrmichnik's dispatch-only trigger here; exact steps and order in `docs/phase-0-design.md`.
 - Outbound mail goes through the shared relay; no per-project Haraka container; DKIM signed in
   the app.
 - Shared edge contract: render `green-fluffy-<env>.conf` into the shared `conf.d`, `nginx -t`
   inside the edge container, reload — never restart, never write the edge's own files.
-- Vendored scripts/workflows from the infra templates keep their "synced from infra@<sha>"
-  header; local edits are minimal and noted for upstreaming.
+- Infra Phase 5 templates do not exist yet (2026-09-26): port from myfinpro (workflows, compose
+  split) and mrmichnik (`deploy.sh` tenant steps), name the origin in a header, and replace with
+  the synced copies ("synced from infra@<sha>") when they land.
 - Latest stable image tags, verified online; pinned actions by full SHA; least-privilege
   `permissions:`; secrets by **name** only.
 - Never put addresses, usernames or hostnames-as-configuration in files or commit messages;

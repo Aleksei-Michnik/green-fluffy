@@ -10,10 +10,10 @@ hostnames-as-configuration.
 | Environment | State                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | local       | `mdock.sh up` (infra repo, our Mdocker toolkit), then `docker compose up -d --build` → the app at its **production URL** over TLS in the isolated browser (`mdock.sh browser green-fluffy`); `nginx` joins `mdock_net` and publishes no port (the only local URL since 2026-09-26; the opt-in overlay of PR #1, `0ac5704`, is folded in); dev images hot-reload (`nest start --watch`, `next dev` over bind-mounted `apps/*`). Direct `:3000` / `:3001` stay for host tooling; `http://localhost:8080` no longer exists |
-| staging     | **none** — `ci.yml` and `pr-check.yml` only (Phase 0.7 pending)                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| production  | **none** (Phase 0.8 pending)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| staging     | **none yet** — 0.7 is ported from myfinpro (workflows, compose split) and mrmichnik (`deploy.sh` tenant steps); push to `develop` will deploy it (`docs/phase-0-design.md` 0.7)                                                                                                                                                                                                                                                                                                                                         |
+| production  | **none yet** — 0.8: push to `main` (a PR from `develop`), gated on CI and staging tests younger than 24 h — the myfinpro pattern kept as-is (owner 2026-09-26); built after 0.10 and 0.9                                                                                                                                                                                                                                                                                                                                |
 
-CI on every push and PR to `main`: lint, typecheck, prettier, unit tests with coverage, build,
+CI on every push and PR to `main` (and `develop` from 0.7): lint, typecheck, prettier, unit tests with coverage, build,
 gitleaks; PR titles checked. Branch protection is an owner action, not yet done.
 
 ## The pipeline this project inherits (Phase 0.7–0.8)
@@ -29,14 +29,18 @@ The two deployed sibling projects share one shape, and this one adopts it unchan
    runs migrations, renders `green-fluffy-<env>.conf` into the shared edge's `conf.d/`, `nginx -t`
    inside the edge container, reload (never restart), verifies through the real request path,
    records `.active-slot` + `.deploy-metadata`, retires the old slot. `rollback.sh <env>` reverses it.
-4. Staging deploys on push to `develop` (to be created); production is **dispatch-only** with a
-   `ref` that must be on `main` and a literal `confirm` input — never on push. The newest reference
-   implementation of all of this is `~/mrmichnik` (`scripts/deploy.sh`, `.github/workflows/deploy-*.yml`);
-   canonical templates arrive with infra Phase 5 and are vendored with a "synced from infra@sha" header.
+4. Triggers are myfinpro's, kept as-is (owner 2026-09-26): push to `develop` deploys staging;
+   push to `main` deploys production, gated on CI and a `test-staging.yml` run younger than 24 h,
+   with `workflow_dispatch` + a literal `confirm` as the manual route. Dispatch-only is
+   mrmichnik's rule (WordPress releases need the owner's review), not a cross-project one.
+   Sources of the port: myfinpro for the workflows and the compose split, `~/mrmichnik` for the
+   `deploy.sh` tenant steps (the newest implementation, in production since 2026-09-24). Infra
+   Phase 5 templates replace the ported files when they exist.
 
-Blocked on: infra Phase 5 templates and the shared-edge neutralization (after the WordPress
-cutover and its soak). Networks `green-fluffy-{staging,production}-net`, `/opt/green-fluffy` and
-the deploy key already exist on the server.
+Not blocked (re-checked 2026-09-26): networks, directories, the deploy key, DNS, GitHub
+environments and secrets exist; the exact steps and their order (0.7 → 0.10 → 0.9 → 0.8) are in
+`docs/phase-0-design.md`. Owner steps: branch protection, public GHCR packages after the first
+build, the merges.
 
 ## Local: the production URL, hot reload and what the app needs
 

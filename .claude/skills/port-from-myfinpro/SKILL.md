@@ -19,7 +19,8 @@ shared package, keep relative paths identical for cross-repo diffing (plan §2).
 5. **Dependencies**: add at the latest stable version verified online (`stack-versions`); adapt
    to breaking changes; never downgrade to myfinpro's pin.
 6. **Infra material** (compose, scripts, workflows): check `wiki/infra-context.md` first — the
-   shared infra repo supersedes parts of it (dispatch-only production, shared mail relay, shared
-   edge contract). Port only what is not superseded.
+   shared infra repo supersedes parts of it (shared mail relay, shared edge contract; the deploy
+   triggers stay myfinpro's). Port what is not superseded, and take the `deploy.sh` tenant steps
+   from mrmichnik, the newest implementation.
 7. **Tests travel with code** and must pass here before the port is complete.
 8. **Backports**: note fixes discovered here that apply to myfinpro in the report/PR description.

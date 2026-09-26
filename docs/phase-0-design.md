@@ -7,7 +7,6 @@
 - [Target Repository Layout](#target-repository-layout)
 - [Naming Conventions](#naming-conventions)
 - [Iteration Plan](#iteration-plan)
-- [VDS & DNS Setup (0.6) in Detail](#vds--dns-setup-06-in-detail)
 - [Shared Nginx Integration (0.7) in Detail](#shared-nginx-integration-07-in-detail)
 - [Secrets Catalog](#secrets-catalog)
 - [Testing Strategy](#testing-strategy)
@@ -133,28 +132,51 @@ exists; `mdock.sh up` precedes `docker compose up`.
 4. Branch protection: `main` and `develop` require CI green.
 5. **Done when**: a PR with failing lint or a fake committed secret is blocked.
 
-### 0.6 Server provisioning + DNS (manual + documented)
+### 0.6 Server provisioning + DNS — mostly done
 
-See [VDS & DNS Setup](#vds--dns-setup-06-in-detail). **Done when**: subdomains resolve through Cloudflare, server dirs + networks exist, all secrets are set in GitHub environments, and `docs/server-setup-guide.md` (green-fluffy edition) documents every step.
+**Verified 2026-09-26** (DNS at a public resolver, the shared server over SSH read-only, the
+GitHub API):
 
-### 0.7 Staging CD
+- Done: `green-fluffy-staging-net` and `green-fluffy-production-net` exist; `/opt/green-fluffy/{staging,production}` exist; the project's deploy key is one of the deploy user's five authorized keys; `green-fluffy.michnik.pro` and `stage-green-fluffy.michnik.pro` resolve to Cloudflare (proxied); GitHub environments `staging` and `production` exist; repository secrets `{STAGING,PRODUCTION}_{HOST,USER,SSH_KEY}` and `CLOUDFLARE_{STAGING,PRODUCTION}_SUBDOMAIN`; environment secrets in both environments `MYSQL_{ROOT_PASSWORD,DATABASE,USER,PASSWORD}`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `SESSION_SECRET`, `COOKIE_SECRET`; secret scanning and push protection enabled.
+- Baseline on the shared server: 7.8 GiB RAM (4.6 used, 3.1 available), 99 GB disk (61 GB free), 21 containers; mrmichnik ≈ 1.8 GiB, myfinpro ≈ 1.6 GiB. Green-fluffy adds four containers per environment (mysql, redis, api, web). If available memory drops below about 1 GiB with both environments running, the documented fallback is one MySQL per project with two schemas (plan §8.2).
+- Origin TLS: the `michnik.pro` zone is on Cloudflare **Flexible** because it is shared with myfinpro, whose origin has no 443 listener (infra doc 04 §2.2.1). The edge vhost for both green-fluffy hostnames therefore listens on port 80 only; the Full (strict) flip with origin certificates for the JS hostnames is infra Phase 5 (doc 07 §5.5), not this iteration.
+- `media` directories are created by `deploy.sh` on its first run (state-directories step), not by hand.
+- `develop` fast-forwarded to `main` on 2026-09-26 (it had been created on 2026-09-25 and left 15 commits behind); it is the integration branch from 0.7 on.
 
-See [Shared Nginx Integration](#shared-nginx-integration-07-in-detail). Port `deploy-staging.yml` + `scripts/deploy.sh` + compose files with these changes:
+Remaining:
 
-1. All names per [Naming Conventions](#naming-conventions).
-2. `deploy.sh` gains an idempotent step: ensure `green-fluffy-<env>-net` exists and is connected to the `myfinpro-nginx` container (`docker network connect … || true`).
-3. Nginx template rendered to the **shared** conf.d as `green-fluffy-staging.conf`; `nginx -t` inside the shared container before reload; on failure, restore previous conf (same auto-revert pattern as myfinpro).
-4. Trigger: push to `develop` after CI passes (ported `workflow_run` poll).
-5. **Done when**: two consecutive deploys to `stage-green-fluffy.michnik.pro` succeed with a slot flip (blue→green→blue) and zero downtime (`curl` loop during switch shows no errors), and myfinpro staging/production remain unaffected.
+1. **Owner** — branch protection on `main` and `develop` (none today; the free plan allows it on a public repository): require a pull request and the CI checks `Lint & Typecheck`, `Unit Tests`, `Build`, `Secret Scan (gitleaks)`, `Conventional PR Title`; no required reviewers (single owner).
+2. No separate `server-setup-guide.md` for this project: this section and infra `docs/13-deploy-runbook.md` are the setup record (one runbook per shared server, not one per tenant).
 
-### 0.8 Production CD
+**Done when**: branch protection is on. Everything else above is verified.
 
-1. Port `deploy-production.yml`: `main` branch, `production` GitHub environment (require manual approval initially), `:latest` + SHA tags, stricter env (`LOG_LEVEL=warn`, `SWAGGER_ENABLED=false`, tighter `RATE_LIMIT_MAX`, CORS locked to the prod domain).
-2. Staging-tests gate: verify latest `test-staging.yml` run is green and < 24 h old (ported mechanism), plus 0.10's suites once they exist.
-3. Pre-deploy dump step before `deploy.sh`: one SSH command, `/opt/shared/backup/backup.sh green-fluffy production pre-deploy` — the infra-owned tooling of 0.9, writing to `/var/backups/green-fluffy/production/pre-deploy/` (five kept). It needs no secret (the dump runs with the mysql container's own environment) and fails the deploy when the tooling is not installed. A slot rollback does not roll the database back; a release that migrated the schema is reverted by restoring this dump, then `rollback.sh`.
-4. **Done when**: the production hostname serves the placeholder landing page over HTTPS and the pre-deploy dump exists on the server.
+### 0.7 Staging CD — push to `develop` deploys staging
 
-### 0.9 Backups (design 2026-09-25, owner's answers folded in — not implemented until 0.8 exists)
+**Pattern**: myfinpro's, kept as-is (owner, 2026-09-26): `deploy-staging.yml` on `push: [develop]` plus `workflow_dispatch`. **Sources of the port**: myfinpro (`~/myfinpro`, branch `develop`) for the workflows and the compose split; mrmichnik (`~/mrmichnik`) for the shared-edge tenant steps of `deploy.sh`, the newest implementation of the pattern and in production since 2026-09-24. Infra Phase 5 templates do not exist yet (checked 2026-09-26); when they land they replace these files with a "synced from infra@sha" header.
+
+Steps (agent, one PR to `develop`):
+
+1. **Branch model**: `ci.yml` and `pr-check.yml` run on `push` and `pull_request` for `main` and `develop`; feature branches target `develop`; `develop → main` by pull request (that merge is the production deploy, 0.8).
+2. **`.github/workflows/deploy-staging.yml`** (from myfinpro; actions pinned by SHA, least-privilege `permissions:`): `ci-check` polls the `CI` workflow for the pushed SHA; `build-and-push` logs in to GHCR with `GITHUB_TOKEN`, builds the `production` targets of `infrastructure/docker/{api,web}.Dockerfile` and pushes `ghcr.io/aleksei-michnik/green-fluffy/{api,web}:staging` and `:staging-<sha7>`; `deploy` (environment `staging`) ships `docker-compose.staging.infra.yml`, `docker-compose.staging.app.yml`, `infrastructure/nginx/vhost.conf.template` and `scripts/{deploy,rollback,cleanup-images}.sh` with `scp-action` to `/opt/green-fluffy/staging`, then `ssh-action` with `envs:` = the environment secrets, exports them and runs `bash scripts/deploy.sh staging "$IMAGE_TAG"`. Secret names as myfinpro: `STAGING_HOST`, `STAGING_USER`, `STAGING_SSH_KEY`.
+3. **Compose split** (from myfinpro): `docker-compose.staging.infra.yml` = `green-fluffy-staging-{mysql,redis}` on the external `green-fluffy-staging-net` (mysql 9.7, redis 8.8, persistent volumes, never `down -v`); `docker-compose.staging.app.yml` = `green-fluffy-staging-{api,web}-{blue,green}` with the local healthchecks, `restart: unless-stopped`, environment from the exported secrets: `DATABASE_URL=mysql://…@green-fluffy-staging-mysql:3306/<db>?allowPublicKeyRetrieval=true`, `API_INTERNAL_URL=http://green-fluffy-staging-api-<slot>:3001/api/v1` (each slot talks to its own API), `ALLOWED_ORIGINS=https://<staging subdomain>` for server actions, `MEDIA_ROOT=/media` bound to `/opt/green-fluffy/staging/media`. No `NEXT_PUBLIC_API_URL` build argument: the client's default is the page's own origin, and the edge routes `/api` there.
+4. **`scripts/deploy.sh`** (mrmichnik's step structure): preflight and lock → slot to fill → disk cleanup → pull the tag → infra tier up and healthy → start the new slot → `prisma migrate deploy` inside the new api container (expand-then-contract, `prisma-migrations` skill) → wait for health → render the edge vhost for the new slot → `docker network connect green-fluffy-staging-net myfinpro-nginx || true` (idempotent) → copy it to the shared `conf.d` as `green-fluffy-staging.conf`, keeping the previous copy → `docker exec myfinpro-nginx nginx -t` → `nginx -s reload` (never restart, never touch the edge's own files) → verify through the edge (`/api/v1/health` and `/` answer 200 with the staging `Host`) → record `.active-slot` and `.deploy-metadata` → stop the old slot → `cleanup-images.sh`. A failed verify restores the previous conf, reloads, stops the new slot and exits 1. `rollback.sh` = previous slot and tag, re-render, `nginx -t`, reload.
+5. **`infrastructure/nginx/vhost.conf.template`** (edge vhost rendered with `envsubst`): `server_name ${SERVER_NAME}`; `listen 80` only (Flexible zone, see 0.6); client IPs from the shared `cloudflare-ips.conf` that already sits in the edge's `conf.d`; the mrmichnik rule for direct visitors (requests without `CF-Connecting-IP` get `301 https`, proxied requests pass unchanged); `location /api/` → `green-fluffy-${ENVIRONMENT}-api-${ACTIVE_SLOT}:3001`, `location /` → `…-web-${ACTIVE_SLOT}:3000` with websocket headers; `client_max_body_size 110M`.
+6. **Owner** — after the first build, make the two GHCR packages public (myfinpro's `deploy.sh` pulls anonymously; this repository is public too). The alternative, a `GHCR_READ_TOKEN` secret with `docker login` in `deploy.sh`, is the mrmichnik way for private images and is not needed here.
+7. **Verification**: the merge into `develop` runs the workflow → `https://stage-green-fluffy.michnik.pro/api/v1/health` 200 and `/` 200 in four locales; a second push flips the slot (`.active-slot` blue → green) while a `curl` loop through Cloudflare shows only 200s; `rollback.sh staging` drill; `https://stage-myfin.michnik.pro/` and myfinpro production unchanged before and after; the edge's `nginx.conf`, `_default.conf` and `cloudflare-ips.conf` timestamps untouched.
+
+**Done when**: two consecutive zero-downtime staging deploys with a slot flip, the rollback drill passed, myfinpro unaffected.
+
+### 0.8 Production CD — push to `main` deploys production
+
+**Pattern**: myfinpro's, kept as-is (owner, 2026-09-26; this supersedes the 2026-09-24 note that made every project dispatch-only — mrmichnik alone stays dispatch-only because WordPress releases need the owner's review). `deploy-production.yml` on `push: [main]` plus `workflow_dispatch` with inputs `confirm` (`deploy-production`) and optional `version_tag`. Jobs, as myfinpro: `validate` (the dispatch confirmation), `ci-check` (CI green for the SHA), `verify-staging-tests` (the latest `test-staging.yml` run succeeded and is younger than 24 h), `build-and-push` (`:production`, `:production-<sha7>`, `:latest`), `deploy` (environment `production`): the same files to `/opt/green-fluffy/production`, then over SSH the pre-deploy dump `/opt/shared/backup/backup.sh green-fluffy production pre-deploy` (0.9; the deploy fails when the tooling is absent, so 0.9 is installed before the first production deploy) and `bash scripts/deploy.sh production "$IMAGE_TAG"`. Stricter environment: `LOG_LEVEL=warn`, `SWAGGER_ENABLED=false`, a tighter `RATE_LIMIT_MAX`, `CORS_ORIGINS` = the production origin. Required reviewers on the `production` environment need a paid plan and are skipped: the review is the `develop → main` pull request.
+
+**Order of execution**: 0.7 → 0.10 → 0.9 → 0.8, because 0.8's two gates need 0.10's staging tests and 0.9's dump.
+
+Steps: the agent ports the workflow and the production compose files (a PR to `develop`, deployed to staging like any change); the **owner** opens and merges the `develop → main` pull request, which is the first production deploy; verify `https://green-fluffy.michnik.pro/` (landing, four locales, dark and light), `/api/v1/health` 200, `/api/docs` 404, and the dump under `/var/backups/green-fluffy/production/pre-deploy/`.
+
+**Done when**: the production hostname serves the landing page over HTTPS and the pre-deploy dump exists.
+
+### 0.9 Backups (design 2026-09-25, owner's answers folded in; built before 0.8's first production deploy)
 
 **State of the world (checked 2026-09-25)**: no scheduled backup runs on the shared server for any project; the crontab of the deploy user is empty, and the cron-based design ported from myfinpro (`backup.sh` + `check-backup-age.sh` in a crontab, `backup-verify.yml` restoring a fixture into a GitHub-hosted MySQL) was never installed there (infra `docs/13-deploy-runbook.md` §5, `docs/10-operations.md`). The only production backups in the shared model today are mrmichnik's pre-deploy dumps. Nothing in this project may assume a backup exists before this iteration ships, and it cannot ship before 0.8.
 
@@ -188,64 +210,47 @@ See [Shared Nginx Integration](#shared-nginx-integration-07-in-detail). Port `de
 
 **Green-fluffy's 0.9 iteration is therefore**: (a) a PR to infra adding the two `green-fluffy` lines (staging, production) to `backup/projects.conf` — owner-reviewed, infra is private and owner-operated; (b) the pre-deploy call in 0.8's workflow; (c) verification of the first scheduled run, a drill and a forced age-check failure for green-fluffy; (d) this section, `wiki/deployment.md` and the progress log updated with dated results. The tooling itself is infra's work and must exist first — myfinpro and mrmichnik need it today (infra doc 13 §5), so it is built for them before green-fluffy is deployed.
 
-**Needs from infra before it can be built**: `backup/{backup.sh,projects.conf}` + `backup.yml` as above, the entry format of `projects.conf`, and the Phase 5 deploy template for 0.8 with the myfinpro-shaped SSH step. Everything else is decided.
+**State 2026-09-26** (checked on the server and in the repos): the infra tooling is not built — `/opt/shared/backup` and `infra/backup/` do not exist, and `/var/backups/` holds only system files. mrmichnik runs its own `backup.yml` since 2026-09-25 and myfinpro its own since 2026-09-24 (PR #53); the infra tooling is the shared successor both migrate to in infra Phase 5 (doc 07 §5.5).
+
+Steps: (1) **agent, infra repo** — build `backup/{backup.sh,projects.conf}` and `.github/workflows/backup.yml` exactly as specified above, first registering the two green-fluffy lines (`green-fluffy-staging-mysql` / `/opt/green-fluffy/staging/media`, and production); (2) **owner** — review and merge that infra PR (the repo is private and owner-operated), then the first scheduled run; (3) **agent** — verify a daily run, a drill and a forced age-check failure for both environments; (4) the pre-deploy call in 0.8's workflow; (5) this section, `wiki/deployment.md` and the progress log record the run ids.
 
 **Done when** (after 0.8): a scheduled infra run produced a dump and a media archive for each green-fluffy environment under `/var/backups/green-fluffy/` and pruned to the retention; a drill restored the newest dump and the counts matched; the age check demonstrably fails (rename the newest dump, dispatch → red; rename back → green); the deploy user's crontab is still empty and no credentials file exists on the server; `git grep -i backup` in this repository finds only the pre-deploy call and documentation.
 
-### 0.10 Staging smoke tests
+### 0.10 Staging smoke tests — the gate 0.8 reads
 
-1. Port `test-staging.yml` + minimal suites: API staging tests (health, api root, docs gated off, rate limiting) and Playwright staging E2E (landing renders in 4 locales, API proxy works, responsive layout).
-2. Wire as production gate (see 0.8).
-3. **Done when**: suite auto-runs after staging deploy and its result gates production.
+Port myfinpro's `test-staging.yml` (`workflow_run` after "Deploy Staging" on `develop`, plus `workflow_dispatch`; runs only when the deploy succeeded) with its two jobs: API staging tests (`apps/api/test/staging/`: health, api root, Swagger gated off, rate limiting, security headers — with `helpers.ts` and `setup.ts`; `STAGING_API_URL=https://<staging subdomain secret>/api/v1`) and Playwright staging E2E (`apps/web/e2e/staging/`: landing in four locales, API proxy, responsive layout; `STAGING_URL=https://<staging subdomain secret>`; base URL from the environment because Playwright resolves through real DNS, not the local resolver rules). myfinpro's page-specific suites (legal, help, registration consent) come with the pages that need them (1.10). The root scripts `test:staging` and `test:e2e:staging` exist since 0.5.
 
-## VDS & DNS Setup (0.6) in Detail
-
-On the VDS (same host as myfinpro; you already have SSH):
-
-```bash
-sudo mkdir -p /opt/green-fluffy/{staging,production}/media
-sudo chown -R deploy:deploy /opt/green-fluffy            # same deploy user as myfinpro
-docker network create green-fluffy-staging-net
-docker network create green-fluffy-production-net
-```
-
-Cloudflare (michnik.pro zone): add `A`/`CNAME` records `stage-green-fluffy` and `green-fluffy` → VDS IP, proxied (orange cloud), TLS mode matching myfinpro's current setting. Mail DNS (SPF/DKIM/DMARC for the mail domain) is Phase 1.3, not here.
-
-GitHub repo settings: create `staging` and `production` environments; add the [secrets catalog](#secrets-catalog); enable secret scanning + push protection; add branch protections.
-
-Resource check before first deploy: `free -h`, `df -h`, `docker stats --no-stream` — record baseline in the setup guide; green-fluffy adds ~4 containers per env plus media storage. If RAM is tight, consolidating MySQL instances is the documented fallback (plan §8.2).
+**Done when**: the suite runs automatically after a staging deploy and 0.8's `verify-staging-tests` job reads its latest run.
 
 ## Shared Nginx Integration (0.7) in Detail
 
-Current VDS state (from myfinpro): container `myfinpro-nginx` (nginx:1.28-alpine, compose project `myfinpro-shared`) binds 80/443, mounts `conf.d/` from `/opt/myfinpro/shared/nginx/conf.d/`, and routes by `Host` header with env-prefixed upstreams and an `_default.conf` catch-all (unknown hosts → 444).
-
-Green-fluffy plugs in without touching the myfinpro repo:
+Shared-server state, verified 2026-09-26: container `myfinpro-nginx` (`nginx:1.28-alpine`, compose project `myfinpro-shared`) binds 80 and 443, mounts `conf.d/` from `/opt/myfinpro/shared/nginx/conf.d/` and routes by `Host`. That directory holds myfinpro's `staging.conf` and `production.conf`, mrmichnik's `mrmichnik-staging.conf`, `mrmichnik-production.conf` and `mrmichnik-000-edge-default.conf`, the `_default.conf` catch-all (unknown hosts → 444) and `cloudflare-ips.conf`. mrmichnik is the proof that a tenant plugs in without touching the myfinpro repository.
 
 ```mermaid
 flowchart LR
-  cf[Cloudflare] --> ng[myfinpro-nginx :80/:443]
-  ng -->|Host: myfinpro.michnik.pro| mfp[myfinpro prod slot]
-  ng -->|Host: stage-green-fluffy...| gfs[green-fluffy staging slot]
-  ng -->|Host: green-fluffy...| gfp[green-fluffy prod slot]
+  cf[Cloudflare, Flexible] -->|:80| ng[myfinpro-nginx]
+  ng -->|Host: myfin…| mfp[myfinpro slot]
+  ng -->|Host: stage-green-fluffy…| gfs[green-fluffy staging slot]
+  ng -->|Host: green-fluffy…| gfp[green-fluffy production slot]
 ```
 
-1. Vhost template `infrastructure/nginx/conf.d/green-fluffy.conf.template` (fork of myfinpro's `ssl.conf.template`): upstreams `green_fluffy_${ENVIRONMENT}_api` → `green-fluffy-${ENVIRONMENT}-api-${ACTIVE_SLOT}:3001` and `..._web` → `...-web-${ACTIVE_SLOT}:3000`; routes `/api/` → api, `/` → web; `client_max_body_size 110M` (media uploads); `server_name` from secret.
-2. Deploy script: `envsubst` render → copy to `/opt/myfinpro/shared/nginx/conf.d/green-fluffy-${ENVIRONMENT}.conf` → `docker exec myfinpro-nginx nginx -t` → reload; keep previous conf for auto-revert.
-3. Network attach (idempotent, in `deploy.sh`): `docker network connect green-fluffy-${ENVIRONMENT}-net myfinpro-nginx 2>/dev/null || true`.
-4. **Cross-repo chore (backlog)**: migrate the shared nginx to a neutral compose project (e.g. `/opt/shared/nginx`) declared in both repos' docs; until then the coupling is one `docker network connect` + one conf file, both owned by green-fluffy's deploy script.
-5. Rollback: `rollback.sh` re-renders conf for the previous slot — same auto-revert-on-failed-verify behavior as myfinpro.
+1. Vhost template `infrastructure/nginx/vhost.conf.template` (0.7 step 5), rendered by `deploy.sh` into `/opt/myfinpro/shared/nginx/conf.d/green-fluffy-${ENVIRONMENT}.conf`; `docker exec myfinpro-nginx nginx -t`, then reload; the previous conf is kept for auto-revert.
+2. Network attach, idempotent, in `deploy.sh`: `docker network connect green-fluffy-${ENVIRONMENT}-net myfinpro-nginx 2>/dev/null || true`.
+3. Port 80 only until infra Phase 5 flips the zone to Full (strict) and issues origin certificates for the JS hostnames; the 443 block is added then, in the template, not in the edge's files.
+4. **Phase 5 (infra, later)**: the edge moves to a neutral `shared-nginx` under `/opt/shared/nginx` with every tenant network declared in its compose; until then the coupling is one `docker network connect` and one conf file, both owned by this project's deploy script.
+5. Rollback: `rollback.sh` re-renders the conf for the previous slot — the same auto-revert-on-failed-verify behaviour as myfinpro and mrmichnik.
 
 ## Secrets Catalog
 
 Names only (values live in GitHub environment secrets; templates committed with placeholders):
 
-- **SSH/deploy**: `STAGING_HOST`, `STAGING_USER`, `STAGING_SSH_KEY`, `PRODUCTION_*` variants (same VDS → same values, still separate secrets for future split). Identical to myfinpro's workflow secret names (checked 2026-09-25) — the owner's rule for every CI here.
-- **Domains**: `CLOUDFLARE_STAGING_SUBDOMAIN` (= `stage-green-fluffy.michnik.pro`), `CLOUDFLARE_PRODUCTION_SUBDOMAIN`.
-- **DB**: `MYSQL_ROOT_PASSWORD`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD` (per env).
-- **Auth**: `JWT_SECRET`, `JWT_REFRESH_SECRET`, `SESSION_SECRET`, `COOKIE_SECRET` (per env, generated fresh — never reuse myfinpro's).
+- **SSH/deploy** (exist since 2026-09-26): `STAGING_HOST`, `STAGING_USER`, `STAGING_SSH_KEY`, `PRODUCTION_*` variants (same VDS → same values, still separate secrets for future split). Identical to myfinpro's workflow secret names (checked 2026-09-25) — the owner's rule for every CI here. Images are pushed with `GITHUB_TOKEN` and pulled anonymously (public packages); no registry secret.
+- **Domains** (exist): `CLOUDFLARE_STAGING_SUBDOMAIN` (= `stage-green-fluffy.michnik.pro`), `CLOUDFLARE_PRODUCTION_SUBDOMAIN`.
+- **DB** (exist, per environment): `MYSQL_ROOT_PASSWORD`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`.
+- **Auth** (exist, per environment): `JWT_SECRET`, `JWT_REFRESH_SECRET`, `SESSION_SECRET`, `COOKIE_SECRET` (generated fresh — never reuse myfinpro's).
 - **OAuth/Telegram** (created in Phase 1): `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`, `TELEGRAM_BOT_TOKEN[/_STAGE]`, `TELEGRAM_BOT_USERNAME[/_STAGE]`, `NEXT_PUBLIC_TELEGRAM_BOT_ID`.
 - **Mail** (Phase 1): `SMTP_HOST/PORT/SECURE/USER/PASS/FROM`, `MAIL_DOMAIN`, `DKIM_PRIVATE_KEY`.
-- **Runtime**: `RATE_LIMIT_*`, `LOG_LEVEL`, `SWAGGER_ENABLED`, `REDIS_URL`, `MEDIA_ROOT`, `MEDIA_QUOTA_DEFAULT_BYTES`.
+- **Runtime** (workflow `env:`, not secrets): `RATE_LIMIT_*`, `LOG_LEVEL`, `SWAGGER_ENABLED`, `REDIS_URL`, `MEDIA_ROOT`, `MEDIA_QUOTA_DEFAULT_BYTES`.
 
 ## Testing Strategy
 
@@ -256,8 +261,8 @@ Names only (values live in GitHub environment secrets; templates committed with 
 
 ## Acceptance Checklist
 
-- [ ] Fresh clone → running local stack using only README
-- [ ] CI blocks bad PRs (lint, types, tests, secrets, PR title)
+- [x] Fresh clone → running local stack using only README (at the production URL through Mdocker, 2026-09-26)
+- [ ] CI blocks bad PRs (lint, types, tests, secrets, PR title) — the checks run; branch protection that makes them required is the owner's 0.6 step
 - [ ] `stage-green-fluffy.michnik.pro` + `green-fluffy.michnik.pro` live, HTTPS, 4 locales, dark/light
 - [ ] Two consecutive zero-downtime blue-green deploys per environment
 - [ ] Rollback drill executed successfully on staging

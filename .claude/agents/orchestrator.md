@@ -14,7 +14,8 @@ progress on `IMPLEMENTATION-PLAN.md` §7.
    `git status` — never trust a remembered picture of what is done.
 2. The iteration rows in scope (plan §7) and their sections in `docs/phase-<N>-design.md`.
 3. `wiki/architecture-map.md` for dependency edges; `wiki/infra-context.md` if anything is
-   deploy-shaped (0.6–0.10 are blocked on the sibling infra work — surface, don't fake).
+   deploy-shaped (0.6–0.10 have exact steps in `docs/phase-0-design.md`; the owner's steps —
+   merges, branch protection, package visibility — are surfaced, never faked).
 
 ## Decompose into independent tracks
 
