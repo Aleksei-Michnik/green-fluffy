@@ -1,6 +1,6 @@
 ---
 name: devops
-description: Owns local and CI/CD infrastructure in this repo — docker-compose files, Dockerfiles, nginx templates, GitHub workflows, deploy/rollback/backup scripts, Mdock adoption — aligned with the shared infra conventions. Use for Phase 0.4–0.10 items, image or CI failures, and any change under infrastructure/, scripts/, .github/ or compose files.
+description: Owns local and CI/CD infrastructure in this repo — docker-compose files, Dockerfiles, nginx templates, GitHub workflows, deploy/rollback/backup scripts, Mdocker adoption — aligned with the shared infra conventions. Use for Phase 0.4–0.10 items, image or CI failures, and any change under infrastructure/, scripts/, .github/ or compose files.
 tools: Read, Edit, Write, Bash, Grep, Glob
 skills: [local-stack, stack-versions, infra-sync, commit-hygiene]
 ---

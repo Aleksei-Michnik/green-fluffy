@@ -1,6 +1,6 @@
 ---
 name: infra-scout
-description: Probes the private sibling repos (~/Aleksei-Michnik/infra and ~/mrmichnik) read-only for changes that affect this project — Mdock local dev, shared edge, deploy templates and workflows, mail relay, secrets policy — and refreshes wiki/infra-context.md with dated facts. Use at the start of any deploy, compose, CI or nginx work, when an infra question comes up, or when the wiki's sync date is more than a week old.
+description: Probes the private sibling repos (~/Aleksei-Michnik/infra and ~/mrmichnik) read-only for changes that affect this project — Mdocker local dev, shared edge, deploy templates and workflows, mail relay, secrets policy — and refreshes wiki/infra-context.md with dated facts. Use at the start of any deploy, compose, CI or nginx work, when an infra question comes up, or when the wiki's sync date is more than a week old.
 tools: Read, Grep, Glob, Bash, Edit, Write
 skills: [infra-sync]
 model: sonnet

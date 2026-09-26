@@ -34,19 +34,19 @@ addresses, usernames or hostnames-as-configuration; the private repos hold the t
   Haraka container (the plan's per-project Haraka is superseded).
 - **Secrets**: GitHub Actions secrets injected per run; no `.env` at rest on the server.
 
-## Mdock — local development front door (infra Phase 6, being built now)
+## Mdocker — local development front door (infra Phase 6, being built now)
 
-- `infra/mdock/hosts.json` registers `green-fluffy` → upstream `green-fluffy-nginx:80` on
-  `mdock_net`; since 2026-09-26 without a `hostHeader` rewrite, so the proxy passes the production
-  hostname as `Host` (the local nginx is the default server). `mdock-traefik` (Traefik v3.6) runs
+- `infra/mdocker/hosts.json` registers `green-fluffy` → upstream `green-fluffy-nginx:80` on
+  `mdocker_net`; since 2026-09-26 without a `hostHeader` rewrite, so the proxy passes the production
+  hostname as `Host` (the local nginx is the default server). `mdocker-traefik` (Traefik v3.6) runs
   on this workstation; mrmichnik and this repo use it as the only local front door. The toolkit
-  is our Mdocker — the ancestor of myorcare's Mdock — taking Mdock's improvements back.
+  is our Mdocker — the ancestor of myorcare's Mdock — taking Mdocker's improvements back.
 - Adoption (PR #1 merged 2026-09-24 as an opt-in overlay; default since 2026-09-26): the `nginx`
-  service joins the external `mdock_net` in `docker-compose.yml` — **no labels, no published
-  port**. Routing is generated from the infra registry (`mdock.sh gen` → file-provider routers on
+  service joins the external `mdocker_net` in `docker-compose.yml` — **no labels, no published
+  port**. Routing is generated from the infra registry (`mdocker.sh gen` → file-provider routers on
   `websecure` only; a router on `web` would outrank the proxy's http→https redirect). The
-  hostname is written only in `hosts.json`; `mdock.sh gen` also derives
-  `generated/env/<id>.env` (`MDOCK_HOST`, `MDOCK_URL`, `MDOCK_DEV_ORIGINS`), which compose loads
+  hostname is written only in `hosts.json`; `mdocker.sh gen` also derives
+  `generated/env/<id>.env` (`MDOCKER_HOST`, `MDOCKER_URL`, `MDOCKER_DEV_ORIGINS`), which compose loads
   as an optional `env_file` from the sibling checkout — the only app-side knob, and no longer a
   hand-written one. The browser-side API URL is relative. Hot reload is the rule for every
   project — see `wiki/deployment.md`.
@@ -72,7 +72,7 @@ addresses, usernames or hostnames-as-configuration; the private repos hold the t
 
 `infra/docs/13-deploy-runbook.md` (cross-project deploy contract: matrix, flow, gaps),
 `infra/docs/notes/next-session.md` (top and §2 table), `infra/docs/notes/phase-2-pipeline.md §1`,
-`infra/mdock/{hosts.json,README.md}`, `infra/edge/`, `infra/templates/` (exists?), `infra/backup/` (exists?),
+`infra/mdocker/{hosts.json,README.md}`, `infra/edge/`, `infra/templates/` (exists?), `infra/backup/` (exists?),
 `infra/mail/README.md`, and `git -C ~/Aleksei-Michnik/infra log --since=<last sync>`;
 `~/mrmichnik/scripts/{deploy,rollback}.sh` and `.github/workflows/deploy-*.yml` as the newest
 reference implementation of the shared pattern (mrmichnik `main` at `4fe525f` on 2026-09-24:

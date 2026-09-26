@@ -3,7 +3,7 @@
 Care platform for animals **and** plants: NestJS 11 API + Next.js 16 web, pnpm/Turborepo, Prisma 7
 on MySQL 9.7, four locales (`en`, `he` RTL, `ru`, `uk`). Sister project **myfinpro** is the
 reference implementation for auth, users, timezone and deployment; the private **infra** repo
-owns servers, edge, mail and the Mdock local-dev toolkit. **This repository is public.**
+owns servers, edge, mail and the Mdocker local-dev toolkit. **This repository is public.**
 
 This file is the index. Depth lives in `docs/` (what to build), `wiki/` (how we build it here),
 `.claude/agents/` (who does what) and `.claude/skills/` (how to do recurring tasks). Read a
@@ -45,7 +45,7 @@ showcase). 0.6 is provisioned; 0.7–0.10 (staging CD on push to `develop`, prod
 `main`, backups, staging tests) have exact steps in `docs/phase-0-design.md` — ported from
 myfinpro and mrmichnik, order 0.7 → 0.10 → 0.9 → 0.8. Phase 1 is under way (1.1 done). Branches
 `main` and `develop` (the integration branch from 0.7); no deploy workflow exists yet. Local runs
-at the production URL through Mdocker (infra `mdock/`).
+at the production URL through Mdocker (infra `mdocker/`).
 
 ## Agents (`.claude/agents/`) — call by role
 
@@ -61,7 +61,7 @@ at the production URL through Mdocker (infra `mdock/`).
 | `security-reviewer` | before merging changes to auth, visibility, media, geo, social, CI or deploy files |
 | `i18n-translator`   | strings added or changed; before a UI iteration is done                            |
 | `kb-curator`        | species and knowledge-base dataset work (2.1, 9.x)                                 |
-| `devops`            | compose, Dockerfiles, nginx, workflows, deploy scripts, Mdock adoption             |
+| `devops`            | compose, Dockerfiles, nginx, workflows, deploy scripts, Mdocker adoption           |
 | `infra-scout`       | infra facts are stale (> 7 days) or a deploy-shaped task starts; read-only probe   |
 
 Independent tasks run in parallel (own worktrees); Prisma migrations are serialized; every
@@ -74,7 +74,7 @@ iteration ends with a `qa-tester` verdict, `progress-log`, and `learn` when some
 | `iteration <N.m>`    | run one plan iteration end to end                                             |
 | `learn [focus]`      | turn this session's findings into updates of agents, skills, wiki, this index |
 | `stack-versions`     | any dependency, image tag, runtime choice; version-drift symptoms             |
-| `local-stack`        | start/check the Docker stack; DB commands; Mdock                              |
+| `local-stack`        | start/check the Docker stack; DB commands; Mdocker                            |
 | `prisma-migrations`  | any schema or migration change                                                |
 | `privacy-guard`      | any endpoint, serializer, public page, media path                             |
 | `i18n`               | any user-facing string, message file, email template                          |
@@ -90,7 +90,7 @@ iteration ends with a `qa-tester` verdict, `progress-log`, and `learn` when some
 ## Sibling repositories (local clones; read-only from here)
 
 `~/myfinpro` (sister app, branch `develop`) · `~/Aleksei-Michnik/infra` (private plan, edge, mail,
-DNS, Mdock — start with `docs/notes/next-session.md`) · `~/mrmichnik` (WordPress sites; newest
+DNS, Mdocker — start with `docs/notes/next-session.md`) · `~/mrmichnik` (WordPress sites; newest
 reference for the shared deploy pattern) · `~/myorcare/web` (Mdock reference, never modified).
 The home-level `~/CLAUDE.md` holds the cross-project rules and server topology; it is not part
 of this repository.
