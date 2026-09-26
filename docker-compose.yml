@@ -92,7 +92,10 @@ services:
       - ./apps/api/.env
     environment:
       NODE_ENV: development
-      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
+      # allowPublicKeyRetrieval: MySQL 9 accounts use caching_sha2_password; a full authentication
+      # (every first connection after a MySQL restart) needs TLS or the server's RSA key. Without
+      # it the pool times out until some other client has logged in (wiki/gotchas.md).
+      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}?allowPublicKeyRetrieval=true
       REDIS_HOST: redis
       REDIS_PORT: 6379
     ports:

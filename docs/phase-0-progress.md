@@ -99,6 +99,13 @@ Verification table in `wiki/deployment.md`: page/API/Swagger 200, asset with `Or
 101, `MDOCK_DEV_ORIGINS` in the container, the production hostname as `Host` in the API log,
 `localhost:8080` refused, `mdock.sh status` green.
 
+Found and fixed on the way (the workstation had rebooted): after a MySQL restart the API stayed
+503 with pool timeouts until some other client had logged in — `caching_sha2_password` full
+authentication over plain TCP needs the server's RSA key, which the `mariadb` driver fetches
+only with `allowPublicKeyRetrieval=true`. Added to the container and example `DATABASE_URL`s;
+reproduced with `FLUSH PRIVILEGES` (503 for 70 s, 300 aborted connects) and re-verified with
+the option (healthy in 10 s, none). `wiki/gotchas.md`.
+
 ## 0.9 — design rewritten (2026-09-25), not implemented
 
 Backups follow the shared model instead of the ported cron design, with the owner's answers of

@@ -55,3 +55,10 @@ web pnpm run build`) or `sudo rm -rf` the directory first.
 - **Docker Desktop down on WSL2** (typically after a Windows reboot) looks like a missing
   `/var/run/docker.sock` and `docker: unknown command: docker compose` — Desktop mounts the
   Compose plugin. Start Docker Desktop; the stack's `restart: unless-stopped` brings it back.
+- **MySQL `caching_sha2_password` with a cold cache** (found 2026-09-26): after a MySQL restart
+  the first connection of an account needs a full authentication — TLS or the server's RSA key —
+  and the `mariadb` driver fetches the key only with `allowPublicKeyRetrieval=true` in
+  `DATABASE_URL`. Without it the API answers 503 (`pool timeout: failed to retrieve a
+connection`) and `Aborted_connects` climbs until any other client (the `mysql` CLI) logs in and
+  warms the cache. `FLUSH PRIVILEGES` clears the cache — use it to reproduce. Production URLs
+  need the option too, or TLS.

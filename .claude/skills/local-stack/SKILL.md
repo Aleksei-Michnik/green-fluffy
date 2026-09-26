@@ -37,6 +37,8 @@ against the containers.
 ## Troubleshooting
 
 - Unhealthy `api`: `docker compose logs -f api`; usually a failed migration or a missing env var.
+  `pool timeout: failed to retrieve a connection` right after MySQL (re)started → `DATABASE_URL`
+  lacks `allowPublicKeyRetrieval=true` (`wiki/gotchas.md`).
 - After `docker compose build` (or when the log shows a start-time `pnpm install`, a missing
   `PrismaClient` export or a version the registry does not know): `docker compose up -d -V` —
   anonymous `node_modules`/`dist` volumes outlive a rebuild (`wiki/gotchas.md`).
