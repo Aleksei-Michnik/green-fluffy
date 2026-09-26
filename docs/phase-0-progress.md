@@ -85,6 +85,11 @@ on the way: rebuilt dev images and renewed anonymous volumes (`wiki/gotchas.md`)
 
 ## 0.4b — the production hostname is the only local URL (2026-09-26)
 
+PR #4 (`feat/production-url-local`: `efa7193` the default, `1b7e499` the MySQL auth fix,
+`e84e60c` the browser gotcha; CI runs 36253884550 and 36255876271 green) merged into `main` as
+`6ee424c` on 2026-09-26 with a merge commit, CI run 36258955740 green. Companion infra commits
+`9957d65` (generated env files, real `Host`) and `b292dff` (stale-browser detection, `--relaunch`).
+
 Owner's direction: local must mirror production including the domain, as mrmichnik does through
 the infra repo's proxy toolkit (our Mdocker, the ancestor of myorcare's Mdock). The opt-in overlay
 of 0.4a is folded into `docker-compose.yml`: `nginx` joins the external `mdock_net` and publishes
