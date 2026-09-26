@@ -1,6 +1,6 @@
 # Infra context — what green-fluffy needs from the sibling infra work
 
-Last synced **2026-09-24** by reading `~/Aleksei-Michnik/infra` (private) and `~/mrmichnik`
+Last synced **2026-09-24** (Mdock section re-checked 2026-09-26) by reading `~/Aleksei-Michnik/infra` (private) and `~/mrmichnik`
 (private). Refresh with the `infra-sync` skill / `infra-scout` agent. This is a **public**
 repository: only paths, container names and network names may be written here — never server
 addresses, usernames or hostnames-as-configuration; the private repos hold the topology.
@@ -32,15 +32,20 @@ addresses, usernames or hostnames-as-configuration; the private repos hold the t
 
 ## Mdock — local development front door (infra Phase 6, being built now)
 
-- `infra/mdock/hosts.json` already registers `green-fluffy` → upstream `green-fluffy-nginx:80`
-  with `hostHeader: localhost`, network `mdock_net`. `mdock-traefik` (Traefik v3.6) is running on
-  this workstation; mrmichnik has adopted it.
-- Green-fluffy adoption is PR #1, merged 2026-09-24 (`docker-compose.mdock.yml`): the local `nginx` service joins the
-  external `mdock_net` network — **no labels**. Routing is generated from the infra registry
-  (`mdock.sh gen` → file-provider routers on `websecure` only; a router on `web` would outrank the
-  proxy's http→https redirect). Published port 8080 stays. The hostname is written only in
-  `hosts.json`; the two app-side knobs (`MDOCK_PUBLIC_API_URL`, `MDOCK_DEV_ORIGINS`) come from the
-  developer's local `.env`. Hot reload is the rule for every project — see `wiki/deployment.md`.
+- `infra/mdock/hosts.json` registers `green-fluffy` → upstream `green-fluffy-nginx:80` on
+  `mdock_net`; since 2026-09-26 without a `hostHeader` rewrite, so the proxy passes the production
+  hostname as `Host` (the local nginx is the default server). `mdock-traefik` (Traefik v3.6) runs
+  on this workstation; mrmichnik and this repo use it as the only local front door. The toolkit
+  is our Mdocker — the ancestor of myorcare's Mdock — taking Mdock's improvements back.
+- Adoption (PR #1 merged 2026-09-24 as an opt-in overlay; default since 2026-09-26): the `nginx`
+  service joins the external `mdock_net` in `docker-compose.yml` — **no labels, no published
+  port**. Routing is generated from the infra registry (`mdock.sh gen` → file-provider routers on
+  `websecure` only; a router on `web` would outrank the proxy's http→https redirect). The
+  hostname is written only in `hosts.json`; `mdock.sh gen` also derives
+  `generated/env/<id>.env` (`MDOCK_HOST`, `MDOCK_URL`, `MDOCK_DEV_ORIGINS`), which compose loads
+  as an optional `env_file` from the sibling checkout — the only app-side knob, and no longer a
+  hand-written one. The browser-side API URL is relative. Hot reload is the rule for every
+  project — see `wiki/deployment.md`.
 - Playwright cannot use Chrome's resolver rules; derive staging/local base URLs from env.
 
 ## Open items that block green-fluffy Phase 0.6–0.10

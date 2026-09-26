@@ -52,3 +52,6 @@ web pnpm run build`) or `sudo rm -rf` the directory first.
 - **tailwind-merge does not know custom radius/shadow/ease/animate names** (`rounded-control` vs
   `rounded-full` were both kept) — `src/lib/cn.ts` registers them via `extendTailwindMerge`;
   colour tokens need no registration.
+- **Docker Desktop down on WSL2** (typically after a Windows reboot) looks like a missing
+  `/var/run/docker.sock` and `docker: unknown command: docker compose` — Desktop mounts the
+  Compose plugin. Start Docker Desktop; the stack's `restart: unless-stopped` brings it back.

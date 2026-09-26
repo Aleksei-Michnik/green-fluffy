@@ -38,8 +38,8 @@ Inherited from myfinpro's DNA and adapted; the code in the repo is the reference
 - API prefix `/api/v1`; Swagger at `/api/docs` behind `SWAGGER_ENABLED`.
 - `PrismaService` builds the client with `new PrismaMariaDb(DATABASE_URL)` (driver adapter); the
   seed and `prisma.config.ts` load env with `process.loadEnvFile` and run through `tsx`.
-- Web talks to the API through nginx in the browser (`NEXT_PUBLIC_API_URL`) and directly for SSR
-  (`API_INTERNAL_URL`).
+- Web talks to the API at the page's own origin in the browser (`NEXT_PUBLIC_API_URL=/api/v1`;
+  nginx routes `/api`) and directly for SSR (`API_INTERNAL_URL`).
 - `localePrefix: 'never'` — locale comes from cookie/detection, not the path; `he` renders
   `dir="rtl"`; theme via `<html data-theme>` set pre-hydration.
 - Trust-proxy list in `main.ts` includes the CDN and Docker ranges; keep it when editing bootstrap.
