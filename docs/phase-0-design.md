@@ -119,10 +119,10 @@ green-fluffy/
 5. **Done when**: a fresh clone reaches a working stack with only README instructions.
 
 **2026-09-26, owner's direction**: the local URL is the production hostname, through the infra
-repo's proxy toolkit (our Mdocker): `nginx` on the external `mdock_net`, no published port, the
-proxy passes the real `Host`, the browser-side API URL is relative, and `MDOCK_DEV_ORIGINS` is
-loaded from the file `mdock.sh gen` derives from the registry. `http://localhost:8080` no longer
-exists; `mdock.sh up` precedes `docker compose up`.
+repo's proxy toolkit (our Mdocker): `nginx` on the external `mdocker_net`, no published port, the
+proxy passes the real `Host`, the browser-side API URL is relative, and `MDOCKER_DEV_ORIGINS` is
+loaded from the file `mdocker.sh gen` derives from the registry. `http://localhost:8080` no longer
+exists; `mdocker.sh up` precedes `docker compose up`.
 
 ### 0.5 CI
 

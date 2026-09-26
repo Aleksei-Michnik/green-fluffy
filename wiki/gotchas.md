@@ -16,7 +16,7 @@
 - **Prettier runs on markdown in CI** (`format:check`): wiki, docs, agent and skill files must be
   prettier-clean; `next-env.d.ts` and `pnpm-lock.yaml` are ignored.
 - **WSL2 + Docker Desktop**: `docker context ls` shows `default` (socket) and `desktop-linux`;
-  published ports reach the Windows loopback through Docker Desktop. Windows Chrome is the Mdock
+  published ports reach the Windows loopback through Docker Desktop. Windows Chrome is the Mdocker
   browser; Playwright ignores Chrome resolver rules.
 - **`curl … | grep -q` under `set -o pipefail`** misreports success (EPIPE → curl exit 23) — write
   the body to a file and grep the file (found in mrmichnik's deploy script, 2026-09-24).
@@ -31,7 +31,7 @@
   2026-09-25: `@prisma/client` 7.9.0 in the volume vs 7.8.0 in the lockfile → "no exported member
   PrismaClient", `web` crash-looping on a missing registry version). After a rebuild run
   `docker compose up -d -V` (renew anonymous volumes).
-- **curl to the mdock proxy negotiates HTTP/2**, where `Upgrade: websocket` is not a thing — an
+- **curl to the mdocker proxy negotiates HTTP/2**, where `Upgrade: websocket` is not a thing — an
   HMR handshake probe returns 404. Use `--http1.1` (→ 101). Browsers do this themselves.
 - **`api` health 503 "pool timeout" for a few minutes right after a fresh recreate** (2026-09-25),
   while a direct driver query from the same container succeeded; cleared by itself, cause not
@@ -62,8 +62,8 @@ web pnpm run build`) or `sudo rm -rf` the directory first.
 connection`) and `Aborted_connects` climbs until any other client (the `mysql` CLI) logs in and
   warms the cache. `FLUSH PRIVILEGES` clears the cache — use it to reproduce. Production URLs
   need the option too, or TLS.
-- **Blank, "Untitled" tab in the mdock browser while everything answers 200** (2026-09-26):
+- **Blank, "Untitled" tab in the mdocker browser while everything answers 200** (2026-09-26):
   Chrome had updated itself in the background and the running isolated window still ran the old
   version, so new tabs got no renderer and sent no requests (old tabs kept working). The proxy
-  toolkit now reports it (`mdock.sh status`, "browser" line) and `mdock.sh browser green-fluffy
+  toolkit now reports it (`mdocker.sh status`, "browser" line) and `mdocker.sh browser green-fluffy
 --relaunch` closes the stale window first. Check this before touching the stack.
