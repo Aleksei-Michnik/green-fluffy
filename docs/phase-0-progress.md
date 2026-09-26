@@ -83,6 +83,29 @@ origin, headless Chrome load with every chunk 200 — table in `wiki/deployment.
 on the way: rebuilt dev images and renewed anonymous volumes (`wiki/gotchas.md`). Also added
 `.claude/settings.json` allowing agents to dispatch and watch workflows.
 
+## 0.4b — the production hostname is the only local URL (2026-09-26)
+
+Owner's direction: local must mirror production including the domain, as mrmichnik does through
+the infra repo's proxy toolkit (our Mdocker, the ancestor of myorcare's Mdock). The opt-in overlay
+of 0.4a is folded into `docker-compose.yml`: `nginx` joins the external `mdock_net` and publishes
+no port; `mdock.sh up` precedes `docker compose up`; `http://localhost:8080` no longer exists
+(direct `:3000`/`:3001` stay for host tooling). The browser-side API URL is relative (`/api/v1`).
+The one thing the app needs from the registry — the origin for Next's `allowedDevOrigins` — is
+loaded from `../infra/mdock/generated/env/green-fluffy.env`, which `mdock.sh gen` now derives
+from `hosts.json` (optional `env_file`, `MDOCK_ENV` override); nothing hand-written, no hostname
+in this repository. Infra side: `hostHeader: localhost` dropped for green-fluffy so the proxy
+passes the real `Host`, and the local nginx became the default server (444 catch-all removed).
+Verification table in `wiki/deployment.md`: page/API/Swagger 200, asset with `Origin` 200, HMR
+101, `MDOCK_DEV_ORIGINS` in the container, the production hostname as `Host` in the API log,
+`localhost:8080` refused, `mdock.sh status` green.
+
+Found and fixed on the way (the workstation had rebooted): after a MySQL restart the API stayed
+503 with pool timeouts until some other client had logged in — `caching_sha2_password` full
+authentication over plain TCP needs the server's RSA key, which the `mariadb` driver fetches
+only with `allowPublicKeyRetrieval=true`. Added to the container and example `DATABASE_URL`s;
+reproduced with `FLUSH PRIVILEGES` (503 for 70 s, 300 aborted connects) and re-verified with
+the option (healthy in 10 s, none). `wiki/gotchas.md`.
+
 ## 0.9 — design rewritten (2026-09-25), not implemented
 
 Backups follow the shared model instead of the ported cron design, with the owner's answers of

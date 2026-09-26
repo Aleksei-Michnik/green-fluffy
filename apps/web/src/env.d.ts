@@ -6,7 +6,7 @@ declare namespace NodeJS {
     /** Port for the web server */
     PORT?: string;
 
-    /** Public API URL — used in browser (goes through Nginx) */
+    /** Public API URL — used in the browser; relative (`/api/v1`) means the page's own origin */
     NEXT_PUBLIC_API_URL?: string;
 
     /** Internal API URL — used for SSR (direct container-to-container) */

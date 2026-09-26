@@ -7,11 +7,11 @@ hostnames-as-configuration.
 
 ## Today
 
-| Environment | State                                                                                                                                                                                                                                                                                                                                          |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| local       | `docker compose up -d --build` → `http://localhost:8080` (nginx → web :3000, api :3001); dev images hot-reload (`nest start --watch`, `next dev` over bind-mounted `apps/*`). Optional: `docker-compose.mdock.yml` serves the stack at its production hostname over TLS through the shared local proxy (PR #1, merged 2026-09-24 as `0ac5704`) |
-| staging     | **none** — `ci.yml` and `pr-check.yml` only (Phase 0.7 pending)                                                                                                                                                                                                                                                                                |
-| production  | **none** (Phase 0.8 pending)                                                                                                                                                                                                                                                                                                                   |
+| Environment | State                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| local       | `mdock.sh up` (infra repo, our Mdocker toolkit), then `docker compose up -d --build` → the app at its **production URL** over TLS in the isolated browser (`mdock.sh browser green-fluffy`); `nginx` joins `mdock_net` and publishes no port (the only local URL since 2026-09-26; the opt-in overlay of PR #1, `0ac5704`, is folded in); dev images hot-reload (`nest start --watch`, `next dev` over bind-mounted `apps/*`). Direct `:3000` / `:3001` stay for host tooling; `http://localhost:8080` no longer exists |
+| staging     | **none** — `ci.yml` and `pr-check.yml` only (Phase 0.7 pending)                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| production  | **none** (Phase 0.8 pending)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 
 CI on every push and PR to `main`: lint, typecheck, prettier, unit tests with coverage, build,
 gitleaks; PR titles checked. Branch protection is an owner action, not yet done.
@@ -38,38 +38,39 @@ Blocked on: infra Phase 5 templates and the shared-edge neutralization (after th
 cutover and its soak). Networks `green-fluffy-{staging,production}-net`, `/opt/green-fluffy` and
 the deploy key already exist on the server.
 
-## Local hot reload behind the proxy
+## Local: the production URL, hot reload and what the app needs
 
-Next 16 answers 403 to `/_next` dev requests (assets, the HMR socket) from an origin it does not
-know; behind the proxy the page origin is the production hostname while Next sees `localhost`.
-`next.config.ts` therefore reads `allowedDevOrigins` from `MDOCK_DEV_ORIGINS`, and
-`NEXT_PUBLIC_API_URL` from `MDOCK_PUBLIC_API_URL` — both set only in the developer's local `.env`
-and passed through by the overlay.
+Three things make the production hostname the local URL without writing it in this repository:
 
-**Verified 2026-09-25** on `main` (`0ac5704`) with the shared proxy up, all six containers healthy
-and `COMPOSE_FILE=docker-compose.yml:docker-compose.mdock.yml`; `curl` with the mkcert CA and
+1. **Routing**: `nginx` is on the proxy's external network under the container name the infra
+   registry expects; the proxy forwards the production hostname as `Host` (no rewrite since
+   2026-09-26) and the local nginx is the default server, so the app sees the same `Host` it
+   will see behind the shared edge.
+2. **API URL**: the browser calls the page's own origin (`NEXT_PUBLIC_API_URL=/api/v1`; nginx
+   routes `/api`), so nothing depends on where the stack is reached from.
+3. **Hot reload**: Next 16 answers 403 to `/_next` dev requests that carry an `Origin` it does
+   not know — the HMR websocket above all; plain asset loads send no `Origin` and pass. The
+   check compares `Origin` with `allowedDevOrigins` (never with `Host`), so `next.config.ts`
+   reads `MDOCK_DEV_ORIGINS`, which compose loads from the file `mdock.sh gen` derives from the
+   registry (`../infra/mdock/generated/env/green-fluffy.env`, optional `env_file`; `MDOCK_ENV`
+   in `.env` overrides the path). Missing or stale file → page loads, nothing reloads.
+
+**Verified 2026-09-26** on the working tree of this change with Docker Desktop restarted, the
+proxy up (`mdock.sh up`, routers regenerated without the `Host` rewrite), the stack recreated
+from the new `docker-compose.yml`, all six containers healthy; `curl` with the mkcert CA and
 `--resolve <host>:443:127.0.0.1`:
 
-| Check                                                              | Result                                                         |
-| ------------------------------------------------------------------ | -------------------------------------------------------------- |
-| page through the proxy                                             | 200                                                            |
-| `/_next/static/…` chunk with `Origin: https://<host>`, origins set | 200                                                            |
-| same request with `MDOCK_DEV_ORIGINS` unset (web recreated)        | 403 (page itself still 200); set again → 200                   |
-| `/_next/webpack-hmr` upgrade with `--http1.1`                      | 101 (over HTTP/2 curl gets 404: upgrade headers are dropped)   |
-| headless Windows Chrome loading the page through the proxy         | DOM rendered, every chunk 200, HMR socket 101 in nginx log     |
-| edit under `apps/web` (attribute on the home page)                 | served on the next request (`✓ Compiled in 29ms`), reverted    |
-| `/api/v1/health` at the page's origin                              | 200; `NEXT_PUBLIC_API_URL` in `web` is `https://<host>/api/v1` |
+| Check                                                                 | Result                                                     |
+| --------------------------------------------------------------------- | ---------------------------------------------------------- |
+| page, `/api/v1/health`, `/api/docs` through the proxy                 | 200, 200, 200                                              |
+| `/_next/static/chunks/…` with `Origin: https://<host>`                | 200                                                        |
+| `/_next/webpack-hmr` upgrade with `--http1.1` and the page's `Origin` | 101                                                        |
+| `MDOCK_DEV_ORIGINS` inside the `web` container                        | set, from the generated file (nothing in the local `.env`) |
+| `Host` received by the API for the proxied health request             | the production hostname (see the API request log)          |
+| `http://localhost:8080/`                                              | connection refused — the port is gone                      |
+| `mdock.sh status`                                                     | `green-fluffy … → 200 … running, on mdock_net`             |
 
-No page calls the API yet (the landing page is static), so same-origin API calls are verified by
-the injected URL and the endpoint, not by a browser request.
-
-## Verify and roll back (once deployed)
-
-`/health` on the edge, the home page 200 with a full body, container logs clean; roll back with
-`scripts/rollback.sh <env>` on the server. Databases are not rolled back by a slot rollback: a
-release that migrates the schema needs a dump first (0.8's pre-deploy dump). Scheduled backups do
-not exist yet on the shared server for any project (2026-09-25) — Phase 0.9 must not assume they
-do; its design (infra-owned tooling at `/opt/shared/backup`, dump inside the mysql container,
-files under `/var/backups/<project>/<env>`, 7 daily / 4 weekly, weekly restore drill, age check =
-alert, no crontab or credentials file, nothing backup-related in this repository beyond the
-pre-deploy call) is in `docs/phase-0-design.md` and waits for 0.8 and the infra tooling.
+Before this change (2026-09-25, overlay + hand-written knobs) the same probes gave: page 200,
+chunk 200 with `MDOCK_DEV_ORIGINS` set and 403 without, HMR 101 over HTTP/1.1 (404 over HTTP/2:
+upgrade headers dropped), headless Chrome with every chunk 200, an edit served on the next
+request. Probe websockets through the proxy with `curl --http1.1`.

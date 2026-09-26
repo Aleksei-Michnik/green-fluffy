@@ -52,3 +52,18 @@ web pnpm run build`) or `sudo rm -rf` the directory first.
 - **tailwind-merge does not know custom radius/shadow/ease/animate names** (`rounded-control` vs
   `rounded-full` were both kept) — `src/lib/cn.ts` registers them via `extendTailwindMerge`;
   colour tokens need no registration.
+- **Docker Desktop down on WSL2** (typically after a Windows reboot) looks like a missing
+  `/var/run/docker.sock` and `docker: unknown command: docker compose` — Desktop mounts the
+  Compose plugin. Start Docker Desktop; the stack's `restart: unless-stopped` brings it back.
+- **MySQL `caching_sha2_password` with a cold cache** (found 2026-09-26): after a MySQL restart
+  the first connection of an account needs a full authentication — TLS or the server's RSA key —
+  and the `mariadb` driver fetches the key only with `allowPublicKeyRetrieval=true` in
+  `DATABASE_URL`. Without it the API answers 503 (`pool timeout: failed to retrieve a
+connection`) and `Aborted_connects` climbs until any other client (the `mysql` CLI) logs in and
+  warms the cache. `FLUSH PRIVILEGES` clears the cache — use it to reproduce. Production URLs
+  need the option too, or TLS.
+- **Blank, "Untitled" tab in the mdock browser while everything answers 200** (2026-09-26):
+  Chrome had updated itself in the background and the running isolated window still ran the old
+  version, so new tabs got no renderer and sent no requests (old tabs kept working). The proxy
+  toolkit now reports it (`mdock.sh status`, "browser" line) and `mdock.sh browser green-fluffy
+--relaunch` closes the stale window first. Check this before touching the stack.

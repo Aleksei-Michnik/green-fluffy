@@ -18,14 +18,20 @@ pnpm + Turborepo monorepo · NestJS API · Next.js web · TypeScript 6 · Prisma
 
 ## Local Development
 
-The whole stack runs in Docker. Host ports are deliberately non-standard
-(MySQL **3308**, Redis **6381**, app via Nginx **8080**) so this stack can run
-alongside the sibling [myfinpro](https://github.com/Aleksei-Michnik/myfinpro)
-stack on the same machine.
+The whole stack runs in Docker and is browsed at its **production URL** — the same hostname,
+over TLS — through the shared local reverse proxy from the private infra repo (`mdock/`). It
+terminates TLS on `127.0.0.1:443` and routes by hostname to this stack's `nginx`, which publishes
+no port of its own; an isolated browser resolves the production hostnames to the proxy while your
+normal browser keeps reaching the real sites. The hostname is registered there, never here.
+Datastore ports are deliberately non-standard (MySQL **3308**, Redis **6381**) so this stack runs
+alongside the sibling [myfinpro](https://github.com/Aleksei-Michnik/myfinpro) and mrmichnik
+stacks on the same machine.
 
 ### Prerequisites
 
-- Docker Engine 25+ and Docker Compose v2+
+- Docker Engine 25+ and Docker Compose v2.24+ (Docker Desktop on WSL2: its port forwarding is
+  what makes `127.0.0.1` mean the same thing to the Windows browser and to the containers)
+- The infra repo cloned beside this one (`../infra`) with its proxy prerequisites (`mkcert`, `jq`)
 - (Optional, for running tooling on the host) Node 26 + pnpm 11 — `nvm use` reads `.nvmrc`
 
 ### Quick start (fresh clone)
@@ -36,43 +42,46 @@ cp .env.example .env
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env
 
-# 2. Start the full stack (builds the api/web images on first run)
+# 2. The shared proxy: network, certificate, routers — once per boot
+(cd ../infra/mdock && ./mdock.sh up)
+
+# 3. Start the full stack (builds the api/web images on first run)
 docker compose up -d --build
 
-# 3. Apply database migrations and seed the baseline row
+# 4. Apply database migrations and seed the baseline row
 docker compose exec api pnpm db:deploy
 docker compose exec api pnpm db:seed
+
+# 5. The app, at its production URL, in the isolated browser
+(cd ../infra/mdock && ./mdock.sh browser green-fluffy)
 ```
 
-Then open:
+| Service            | Where                                                                   |
+| ------------------ | ----------------------------------------------------------------------- |
+| Web, API, Swagger  | `https://<production hostname>` — `/`, `/api/v1/health`, `/api/docs`    |
+| Web (direct)       | http://localhost:3000                                                   |
+| API (direct)       | http://localhost:3001/api/v1/health                                     |
+| Mailpit (email UI) | http://localhost:8025 — every outbound mail is captured, none delivered |
 
-| Service            | URL                                 |
-| ------------------ | ----------------------------------- |
-| Web (via Nginx)    | http://localhost:8080               |
-| API health         | http://localhost:8080/api/v1/health |
-| Web (direct)       | http://localhost:3000               |
-| API (direct)       | http://localhost:3001/api/v1/health |
-| Swagger docs       | http://localhost:8080/api/docs      |
-| Mailpit (email UI) | http://localhost:8025               |
+MySQL is reachable on `localhost:3308`, Redis on `localhost:6381`. From a shell, reach the app the
+way `curl` says it: `curl --cacert "$(mkcert -CAROOT)/rootCA.pem" --resolve <host>:443:127.0.0.1
+https://<host>/api/v1/health`; `./mdock.sh status` in the infra repo shows every host end to end.
 
-MySQL is reachable on `localhost:3308`, Redis on `localhost:6381`.
+### How the production URL works here
 
-### Production hostname, locally (mdock)
-
-The infra repo's `mdock` toolkit runs one shared reverse proxy on `127.0.0.1:443` and an isolated
-browser whose DNS points this project's production hostname at it. Opt in with the overlay, which
-only joins the proxy's network (the hostname lives in the private infra registry, not here):
-
-```bash
-export COMPOSE_FILE=docker-compose.yml:docker-compose.mdock.yml
-docker compose up -d
-```
-
-Set `MDOCK_PUBLIC_API_URL` in your local `.env` to the production API URL so the browser calls the
-API at the same origin as the page, and `MDOCK_DEV_ORIGINS` to the production hostname so Next's
-dev server accepts `/_next` requests (assets and the HMR socket) from that origin. Hot reload is
-unchanged: the dev images run `nest start --watch` and `next dev` over the bind-mounted sources.
-Without those two variables the app keeps using `localhost:8080`.
+- `nginx` joins the proxy's external network `mdock_net` under the container name the infra
+  registry expects; the proxy forwards the production hostname as `Host`, exactly as the shared
+  edge does on the server, and `nginx` answers to whatever name it is sent.
+- The browser calls the API at the page's own origin (`NEXT_PUBLIC_API_URL=/api/v1`), so the URL
+  is the same at the production hostname and anywhere else the stack is reached.
+- Hot reload: the dev images run `nest start --watch` and `next dev` over the bind-mounted
+  sources. Next 16 only serves `/_next` dev requests (assets, the HMR socket) to origins it
+  knows, so `docker compose` loads `MDOCK_DEV_ORIGINS` from the file `mdock.sh gen` derives from
+  the registry (`../infra/mdock/generated/env/green-fluffy.env`; `MDOCK_ENV` in `.env` points
+  elsewhere when the infra checkout is not a sibling). Without it the stack still runs and the
+  page loads, but nothing reloads.
+- The isolated browser pins the proxy's local CA until `./mdock.sh trust` makes the machine trust
+  it; the proxy's README in the infra repo has the rest.
 
 ### Database commands
 
@@ -103,6 +112,8 @@ docker compose down -v            # stop and wipe the database/redis volumes
   client at image-build time, so a fresh clone boots with only the commands
   above. Editing `packages/shared` requires `docker compose build api web`.
 - App source (`apps/api`, `apps/web`) is bind-mounted for hot reload.
+- CI does not start this stack; a machine without the proxy can still create the network
+  (`docker network create mdock_net`) and use the direct web port.
 - Migrations run as a dev user with broad local privileges so Prisma can manage
   its shadow database. Production uses a tightly-scoped user + `db:deploy`.
 

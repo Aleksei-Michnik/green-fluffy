@@ -2,7 +2,7 @@
 
 Index only — iteration detail lives in `docs/phase-<N>-progress.md`. Format: `progress-log` skill.
 
-**Last updated**: 2026-09-25 · **Current work**: Phase 1 started — 1.1 auth schema done
+**Last updated**: 2026-09-26 · **Current work**: local stack now at the production hostname by default (0.4b); Phase 1 started — 1.1 auth schema done
 (six account models, `phase1_accounts` migration applied locally, model tests); next plan row
 is **1.2** (email+password auth). Staging apply of the migration and Phase 0.6–0.10 stay
 blocked on the sibling infra work (`wiki/infra-context.md`).
@@ -28,8 +28,8 @@ blocked on the sibling infra work (`wiki/infra-context.md`).
 Monorepo on the latest toolchain (Node 26, pnpm 11, TS 6), NestJS API skeleton with health,
 metrics and throttling, Next.js web skeleton with four locales, theme toggle and — since
 2026-09-25 — the accessible, localised UI kit (semantic tokens, primitives, axe-verified,
-`/kit` showcase), local Docker stack on non-default ports (optionally behind the shared mdock
-proxy with hot reload), and CI with lint/typecheck/prettier/unit/build/gitleaks. Server
+`/kit` showcase), local Docker stack served at its production hostname through the shared proxy toolkit
+with hot reload (datastores on non-default ports), and CI with lint/typecheck/prettier/unit/build/gitleaks. Server
 provisioning and CD are deferred until the shared infra provides its templates; the 0.9 backups
 design is written.
 
