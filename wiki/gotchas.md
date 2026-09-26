@@ -62,3 +62,8 @@ web pnpm run build`) or `sudo rm -rf` the directory first.
 connection`) and `Aborted_connects` climbs until any other client (the `mysql` CLI) logs in and
   warms the cache. `FLUSH PRIVILEGES` clears the cache — use it to reproduce. Production URLs
   need the option too, or TLS.
+- **Blank, "Untitled" tab in the mdock browser while everything answers 200** (2026-09-26):
+  Chrome had updated itself in the background and the running isolated window still ran the old
+  version, so new tabs got no renderer and sent no requests (old tabs kept working). The proxy
+  toolkit now reports it (`mdock.sh status`, "browser" line) and `mdock.sh browser green-fluffy
+--relaunch` closes the stale window first. Check this before touching the stack.

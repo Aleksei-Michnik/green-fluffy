@@ -59,5 +59,8 @@ against the containers.
   `env_file`; `MDOCK_ENV` in `.env` overrides the path). Page loads but nothing reloads → that
   file is missing or stale: `mdock.sh gen`, then `docker compose up -d web`.
 - Probe websockets through the proxy with `curl --http1.1`; over HTTP/2 the upgrade is dropped.
+- Blank, "Untitled" tab in the mdock browser although `curl` through the proxy gets 200 → the
+  window runs a Chrome older than the installed one (background update): `mdock.sh status`
+  "browser" line; `mdock.sh browser green-fluffy --relaunch`. Not a stack problem.
 - Docker Desktop down (after a Windows reboot) looks like `/var/run/docker.sock` missing and
   `docker: unknown command: docker compose` — Desktop mounts the Compose plugin (`wiki/gotchas.md`).
